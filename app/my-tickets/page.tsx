@@ -8,15 +8,16 @@ import { useAuth } from '@/components/AuthProvider'
 import { TICKET_STATUSES } from '@/lib/utils'
 import type { TicketStatus } from '@/types'
 
+const PAGE_SIZE = 20
+
 export default function MyTicketsPage() {
   const router = useRouter()
   const { userEmail, userName } = useAuth()
   const [tickets, setTickets] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
   const [filtersOpen, setFiltersOpen] = useState(false)
-
-  const [page, setPage] = useState(1)
-  const PAGE_SIZE = 20
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   const [search, setSearch] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -40,11 +41,14 @@ export default function MyTicketsPage() {
       search, startDate, endDate,
       asset: assetFilter, department: deptFilter,
       equipment: equipFilter, status: statusFilter,
+      page: String(page),
+      pageSize: String(PAGE_SIZE),
     })
     try {
       const res = await fetch(`/api/tickets?${params}`)
       const json = await res.json()
       setTickets(json.data || [])
+      setTotalCount(json.count ?? 0)
 
       // Build filter options from results
       const uniqueAssets = [...new Set((json.data || []).map((t: Record<string, unknown>) => t.Asset as string))].sort() as string[]
@@ -56,20 +60,19 @@ export default function MyTicketsPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, startDate, endDate, assetFilter, deptFilter, equipFilter, statusFilter])
+  }, [page, search, startDate, endDate, assetFilter, deptFilter, equipFilter, statusFilter, userEmail, userName])
 
   useEffect(() => { fetchTickets() }, [fetchTickets])
 
-  // Reset to page 1 when filters change
-  useEffect(() => { setPage(1) }, [search, startDate, endDate, assetFilter, deptFilter, equipFilter, statusFilter])
+  // Reset to page 0 when filters change
+  useEffect(() => { setPage(0) }, [search, startDate, endDate, assetFilter, deptFilter, equipFilter, statusFilter])
 
   function resetFilters() {
     setSearch(''); setStartDate(''); setEndDate('')
     setAssetFilter('All'); setDeptFilter('All'); setEquipFilter('All'); setStatusFilter('All')
   }
 
-  const totalPages = Math.ceil(tickets.length / PAGE_SIZE)
-  const visibleTickets = tickets.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
   return (
     <div className="flex flex-col min-h-screen pb-16">
@@ -196,7 +199,7 @@ export default function MyTicketsPage() {
           ) : tickets.length === 0 ? (
             <div className="py-8 text-center text-sm text-gray-400">No tickets found.</div>
           ) : (
-            visibleTickets.map((t) => {
+            tickets.map((t) => {
               const ticket = t as Record<string, unknown>
               const locationLabel = ticket.Facility
                 ? `Facility: ${ticket.Facility}`
@@ -218,19 +221,19 @@ export default function MyTicketsPage() {
             })
           )}
 
-          {!loading && tickets.length > 0 && (
+          {!loading && totalCount > 0 && (
             <div className="flex items-center justify-between pt-3 pb-2 border-t border-gray-100 mt-1">
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
                 className="px-4 py-2 text-xs font-medium rounded-md bg-gray-100 text-gray-600 disabled:opacity-40"
               >
                 Previous
               </button>
-              <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
+              <span className="text-xs text-gray-500">Page {page + 1} of {totalPages}</span>
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
                 className="px-4 py-2 text-xs font-medium rounded-md bg-gray-100 text-gray-600 disabled:opacity-40"
               >
                 Next

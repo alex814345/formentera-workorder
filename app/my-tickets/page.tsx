@@ -218,12 +218,12 @@ export default function MyTicketsPage() {
             })
           )}
 
-          {!loading && totalPages > 1 && (
-            <div className="flex items-center justify-between pt-2 pb-2">
+          {!loading && tickets.length > 0 && (
+            <div className="flex items-center justify-between pt-3 pb-2 border-t border-gray-100 mt-1">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 text-gray-600 disabled:opacity-40"
+                className="px-4 py-2 text-xs font-medium rounded-md bg-gray-100 text-gray-600 disabled:opacity-40"
               >
                 Previous
               </button>
@@ -231,7 +231,7 @@ export default function MyTicketsPage() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 text-gray-600 disabled:opacity-40"
+                className="px-4 py-2 text-xs font-medium rounded-md bg-gray-100 text-gray-600 disabled:opacity-40"
               >
                 Next
               </button>

@@ -1,15 +1,20 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface AccordionProps {
   title: string
   defaultOpen?: boolean
+  forceOpen?: boolean
   children: React.ReactNode
 }
 
-export default function Accordion({ title, defaultOpen = false, children }: AccordionProps) {
+export default function Accordion({ title, defaultOpen = false, forceOpen, children }: AccordionProps) {
   const [open, setOpen] = useState(defaultOpen)
+
+  useEffect(() => {
+    if (forceOpen !== undefined) setOpen(forceOpen)
+  }, [forceOpen])
 
   return (
     <div className="border-b border-gray-200 last:border-0">

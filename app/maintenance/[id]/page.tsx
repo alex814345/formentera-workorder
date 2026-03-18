@@ -16,6 +16,7 @@ export default function MaintenanceTicketPage() {
   const { id } = useParams()
   const { userName, userEmail } = useAuth()
   const [tab, setTab] = useState<Tab>('Summary')
+  const [expandAll, setExpandAll] = useState(false)
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -254,8 +255,18 @@ export default function MaintenanceTicketPage() {
               </div>
             )}
 
+            {/* Expand All toggle */}
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setExpandAll(v => !v)}
+                className="text-xs font-medium text-[#1B2E6B] underline underline-offset-2"
+              >
+                {expandAll ? 'Collapse All' : 'Expand All'}
+              </button>
+            </div>
+
             {/* Accordion sections */}
-            <Accordion title="Maintenance Location Details">
+            <Accordion title="Maintenance Location Details" forceOpen={expandAll}>
               <div>
                 {[
                   ['Submission Date', formatDate(ticket.Issue_Date as string)],
@@ -275,7 +286,7 @@ export default function MaintenanceTicketPage() {
               </div>
             </Accordion>
 
-            <Accordion title="Equipment Details">
+            <Accordion title="Equipment Details" forceOpen={expandAll}>
               <div>
                 {[
                   ['Equipment Type', ticket.Equipment_Type],
@@ -289,7 +300,7 @@ export default function MaintenanceTicketPage() {
               </div>
             </Accordion>
 
-            <Accordion title="Issue Details">
+            <Accordion title="Issue Details" forceOpen={expandAll}>
               <div>
                 {[
                   ['Department', ticket.Department],
@@ -304,7 +315,7 @@ export default function MaintenanceTicketPage() {
               </div>
             </Accordion>
 
-            <Accordion title="Dispatch Details">
+            <Accordion title="Dispatch Details" forceOpen={expandAll}>
               <div>
                 {[
                   ['Work Order Decision', dispatch.work_order_decision],
@@ -321,7 +332,7 @@ export default function MaintenanceTicketPage() {
               </div>
             </Accordion>
 
-            <Accordion title="Repairs / Closeout Details">
+            <Accordion title="Repairs / Closeout Details" forceOpen={expandAll}>
               <div>
                 {!!(repairs.repair_images && (repairs.repair_images as string[]).length > 0) && (
                   <div className="mb-3">

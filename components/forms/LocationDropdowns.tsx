@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { filterOptions } from '@/lib/utils'
+import SearchableSelect from '@/components/ui/SearchableSelect'
 
 interface LocationDropdownsProps {
   locationType: 'Well' | 'Facility' | ''
@@ -113,62 +113,35 @@ export default function LocationDropdowns({ locationType, onChange, initialValue
       {/* Asset */}
       <div>
         <label className="form-label form-label-required">Asset</label>
-        <div className="relative">
-          <select
-            className="form-select"
-            value={asset}
-            onChange={e => {
-              const v = e.target.value
-              setAsset(v); setField(''); setWell(''); setFacility('')
-              emit(v, '', '', '')
-            }}
-          >
-            <option value="">Select an Asset</option>
-            {assets.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-          <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-        </div>
+        <SearchableSelect
+          value={asset}
+          options={assets}
+          placeholder="Select an Asset"
+          onChange={v => { setAsset(v); setField(''); setWell(''); setFacility(''); emit(v, '', '', '') }}
+        />
       </div>
 
       {/* Field */}
       <div>
         <label className="form-label">Field</label>
-        <div className="relative">
-          <select
-            className="form-select"
-            value={field}
-            onChange={e => {
-              const v = e.target.value
-              setField(v); setWell(''); setFacility('')
-              emit(asset, v, '', '')
-            }}
-          >
-            <option value="">Select a Field</option>
-            {fields.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
-          <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-        </div>
+        <SearchableSelect
+          value={field}
+          options={fields}
+          placeholder="Select a Field"
+          onChange={v => { setField(v); setWell(''); setFacility(''); emit(asset, v, '', '') }}
+        />
       </div>
 
       {/* Well — only shown if locationType = Well */}
       {locationType === 'Well' && (
         <div>
           <label className="form-label form-label-required">Well</label>
-          <div className="relative">
-            <select
-              className="form-select"
-              value={well}
-              onChange={e => {
-                const v = e.target.value
-                setWell(v); setFacility('')
-                emit(asset, field, v, '')
-              }}
-            >
-              <option value="">Select a Well</option>
-              {wells.map(w => <option key={w} value={w}>{w}</option>)}
-            </select>
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
+          <SearchableSelect
+            value={well}
+            options={wells}
+            placeholder="Select a Well"
+            onChange={v => { setWell(v); setFacility(''); emit(asset, field, v, '') }}
+          />
         </div>
       )}
 
@@ -176,21 +149,12 @@ export default function LocationDropdowns({ locationType, onChange, initialValue
       {locationType === 'Facility' && (
         <div>
           <label className="form-label form-label-required">Facility</label>
-          <div className="relative">
-            <select
-              className="form-select"
-              value={facility}
-              onChange={e => {
-                const v = e.target.value
-                setFacility(v); setWell('')
-                emit(asset, field, '', v)
-              }}
-            >
-              <option value="">Select a Facility</option>
-              {facilities.map(f => <option key={f} value={f}>{f}</option>)}
-            </select>
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
+          <SearchableSelect
+            value={facility}
+            options={facilities}
+            placeholder="Select a Facility"
+            onChange={v => { setFacility(v); setWell(''); emit(asset, field, '', v) }}
+          />
         </div>
       )}
     </div>

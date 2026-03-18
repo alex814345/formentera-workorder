@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ChevronDown, Camera } from 'lucide-react'
 import LocationDropdowns from '@/components/forms/LocationDropdowns'
+import SearchableSelect from '@/components/ui/SearchableSelect'
 import { DEPARTMENTS, LOCATION_TYPES } from '@/lib/utils'
 import { useAuth } from '@/components/AuthProvider'
 import type { LocationType } from '@/types'
@@ -146,24 +147,22 @@ export default function MaintenanceFormPage() {
           <div className="space-y-4">
             <div>
               <label className="form-label form-label-required">Select an Equipment Type</label>
-              <div className="relative">
-                <select className="form-select" value={form.Equipment_Type} onChange={e => { set('Equipment_Type', e.target.value); set('Equipment', '') }}>
-                  <option value="">Select Equipment Type</option>
-                  {equipmentTypes.map(et => <option key={et.id} value={et.equipment_type}>{et.equipment_type}</option>)}
-                </select>
-                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
+              <SearchableSelect
+                value={form.Equipment_Type}
+                options={equipmentTypes.map(et => et.equipment_type)}
+                placeholder="Select Equipment Type"
+                onChange={v => { set('Equipment_Type', v); set('Equipment', '') }}
+              />
             </div>
 
             <div>
               <label className="form-label form-label-required">Equipment Name</label>
-              <div className="relative">
-                <select className="form-select" value={form.Equipment} onChange={e => set('Equipment', e.target.value)}>
-                  <option value="">Select Equipment</option>
-                  {equipment.map(eq => <option key={eq.id} value={eq.equip_name}>{eq.equip_name}</option>)}
-                </select>
-                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
+              <SearchableSelect
+                value={form.Equipment}
+                options={equipment.map(eq => eq.equip_name)}
+                placeholder="Select Equipment"
+                onChange={v => set('Equipment', v)}
+              />
             </div>
           </div>
         </div>
@@ -226,13 +225,12 @@ export default function MaintenanceFormPage() {
             {/* Assigned Foreman */}
             <div>
               <label className="form-label">Assigned Foreman</label>
-              <div className="relative">
-                <select className="form-select" value={form.assigned_foreman} onChange={e => set('assigned_foreman', e.target.value)}>
-                  <option value="">Select Foreman</option>
-                  {employees.map(emp => <option key={emp.id} value={emp.name}>{emp.name}</option>)}
-                </select>
-                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
+              <SearchableSelect
+                value={form.assigned_foreman}
+                options={employees.map(e => e.name)}
+                placeholder="Select Foreman"
+                onChange={v => set('assigned_foreman', v)}
+              />
             </div>
 
             {/* Self Dispatch */}

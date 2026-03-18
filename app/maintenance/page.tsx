@@ -34,6 +34,18 @@ export default function MaintenancePage() {
   const [foremans, setForemans] = useState<string[]>([])
   const [submitters, setSubmitters] = useState<string[]>([])
 
+  useEffect(() => {
+    fetch('/api/tickets/options?mode=all')
+      .then(r => r.json())
+      .then(json => {
+        setAssets(json.assets || [])
+        setDepartments(json.departments || [])
+        setEquipments(json.equipments || [])
+        setForemans(json.foremans || [])
+        setSubmitters(json.submitters || [])
+      })
+  }, [])
+
   const fetchTickets = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams({
@@ -51,13 +63,6 @@ export default function MaintenancePage() {
       const json = await res.json()
       setTickets(json.data || [])
       setTotalCount(json.count ?? 0)
-
-      const data = json.data || []
-      setAssets([...new Set(data.map((t: Record<string, unknown>) => t.Asset as string))].sort() as string[])
-      setDepartments([...new Set(data.map((t: Record<string, unknown>) => t.Department as string))].sort() as string[])
-      setEquipments([...new Set(data.map((t: Record<string, unknown>) => t.Equipment as string))].sort() as string[])
-      setForemans([...new Set(data.map((t: Record<string, unknown>) => t.assigned_foreman as string).filter(Boolean))].sort() as string[])
-      setSubmitters([...new Set(data.map((t: Record<string, unknown>) => t.Created_by_Name as string))].sort() as string[])
     } finally {
       setLoading(false)
     }

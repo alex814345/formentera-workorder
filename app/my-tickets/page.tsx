@@ -31,6 +31,17 @@ export default function MyTicketsPage() {
   const [departments, setDepartments] = useState<string[]>([])
   const [equipments, setEquipments] = useState<string[]>([])
 
+  useEffect(() => {
+    if (!userEmail && !userName) return
+    fetch(`/api/tickets/options?mode=mine&userEmail=${encodeURIComponent(userEmail)}&userName=${encodeURIComponent(userName)}`)
+      .then(r => r.json())
+      .then(json => {
+        setAssets(json.assets || [])
+        setDepartments(json.departments || [])
+        setEquipments(json.equipments || [])
+      })
+  }, [userEmail, userName])
+
   const fetchTickets = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams({
@@ -48,13 +59,6 @@ export default function MyTicketsPage() {
       const json = await res.json()
       setTickets(json.data || [])
       setTotalCount(json.count ?? 0)
-
-      const uniqueAssets = [...new Set((json.data || []).map((t: Record<string, unknown>) => t.Asset as string))].sort() as string[]
-      const uniqueDepts = [...new Set((json.data || []).map((t: Record<string, unknown>) => t.Department as string))].sort() as string[]
-      const uniqueEquip = [...new Set((json.data || []).map((t: Record<string, unknown>) => t.Equipment as string))].sort() as string[]
-      setAssets(uniqueAssets)
-      setDepartments(uniqueDepts)
-      setEquipments(uniqueEquip)
     } finally {
       setLoading(false)
     }

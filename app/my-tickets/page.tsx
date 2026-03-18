@@ -201,11 +201,15 @@ export default function MyTicketsPage() {
           ) : (
             tickets.map((t) => {
               const ticket = t as Record<string, unknown>
-              const locationLabel = ticket.Facility
-                ? `Facility: ${ticket.Facility}`
-                : ticket.Well
-                ? `Well: ${ticket.Well}`
-                : ticket.Field as string || ''
+              const type = String(ticket.Location_Type ?? '').trim()
+              const fac  = String(ticket.Facility ?? '').trim()
+              const well = String(ticket.Well ?? '').trim()
+              const blank = (v: string) => !v || v.toLowerCase() === 'null'
+              const locationLabel =
+                type === 'Facility' ? `Facility: ${blank(fac) ? '—' : fac}` :
+                type === 'Well'     ? `Well: ${blank(well) ? '—' : well}` :
+                !blank(fac)         ? `Facility: ${fac}` :
+                !blank(well)        ? `Well: ${well}` : '—'
               return (
                 <TicketCard
                   key={ticket.id as number}

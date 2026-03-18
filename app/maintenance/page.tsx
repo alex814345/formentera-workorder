@@ -166,17 +166,6 @@ export default function MaintenancePage() {
                 </div>
               </div>
 
-              {/* Final Cost Pending toggle */}
-              <div className="flex items-center justify-between">
-                <label className="form-label mb-0 text-sm">Final Cost Pending</label>
-                <button
-                  type="button"
-                  onClick={() => setFinalCostPending(!finalCostPending)}
-                  className={`w-12 h-6 rounded-full transition-colors ${finalCostPending ? 'bg-[#1B2E6B]' : 'bg-gray-300'}`}
-                >
-                  <span className={`block w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${finalCostPending ? 'translate-x-6' : 'translate-x-0'}`} />
-                </button>
-              </div>
             </div>
           )}
         </div>
@@ -190,11 +179,15 @@ export default function MaintenancePage() {
           ) : (
             tickets.map((t) => {
               const ticket = t as Record<string, unknown>
-              const locationLabel = ticket.Facility
-                ? `Facility: ${ticket.Facility}`
-                : ticket.Well
-                ? `Well: ${ticket.Well}`
-                : ticket.Field as string || ''
+              const type = String(ticket.Location_Type ?? '').trim()
+              const fac  = String(ticket.Facility ?? '').trim()
+              const well = String(ticket.Well ?? '').trim()
+              const blank = (v: string) => !v || v.toLowerCase() === 'null'
+              const locationLabel =
+                type === 'Facility' ? `Facility: ${blank(fac) ? '—' : fac}` :
+                type === 'Well'     ? `Well: ${blank(well) ? '—' : well}` :
+                !blank(fac)         ? `Facility: ${fac}` :
+                !blank(well)        ? `Well: ${well}` : '—'
               return (
                 <TicketCard
                   key={ticket.id as number}

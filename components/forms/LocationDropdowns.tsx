@@ -57,6 +57,50 @@ export default function LocationDropdowns({ locationType, onChange, initialValue
     onChange({ asset: a, field: f, well: w, facility: fac, area, route })
   }, [getAreaRoute, onChange])
 
+  // Auto-fill: when a selection narrows to a single candidate, fill it automatically
+  useEffect(() => {
+    if (!wfData || Object.keys(wfData).length === 0) return
+
+    const AssetArr    = wfData.Asset ?? []
+    const FieldArr    = wfData.FIELD ?? []
+    const WellArr     = wfData.WELLNAME ?? []
+    const FacilityArr = wfData.Facility_Name ?? []
+
+    const isGood = (v: unknown): v is string =>
+      v != null && String(v).trim() !== '' && String(v).toLowerCase() !== 'null'
+
+    const len = Math.max(AssetArr.length, FieldArr.length, WellArr.length, FacilityArr.length)
+    const idx: number[] = []
+    for (let i = 0; i < len; i++) {
+      if ((!asset    || AssetArr[i]    === asset) &&
+          (!field    || FieldArr[i]    === field) &&
+          (!well     || WellArr[i]     === well) &&
+          (!facility || FacilityArr[i] === facility)) {
+        idx.push(i)
+      }
+    }
+
+    const uniq = (arr: unknown[]) => [...new Set(arr.filter(isGood))] as string[]
+    const candAsset    = uniq(idx.map(i => AssetArr[i]))
+    const candField    = uniq(idx.map(i => FieldArr[i]))
+    const candWell     = uniq(idx.map(i => WellArr[i]))
+    const candFacility = uniq(idx.map(i => FacilityArr[i]))
+    const newAsset    = !asset    && candAsset.length    === 1 ? candAsset[0]    : asset
+    const newField    = !field    && candField.length    === 1 ? candField[0]    : field
+    const newWell     = !well     && candWell.length     === 1 ? candWell[0]     : well
+    const newFacility = !facility && candFacility.length === 1 ? candFacility[0] : facility
+
+    const changed = newAsset !== asset || newField !== field || newWell !== well || newFacility !== facility
+    if (!changed) return
+
+    if (newAsset    !== asset)    setAsset(newAsset)
+    if (newField    !== field)    setField(newField)
+    if (newWell     !== well)     setWell(newWell)
+    if (newFacility !== facility) setFacility(newFacility)
+
+    emit(newAsset, newField, newWell, newFacility)
+  }, [asset, field, well, facility, wfData, emit])
+
   const assets = filterOptions(wfData, 'Asset', {})
   const fields = filterOptions(wfData, 'FIELD', { Asset: asset || null })
   const wells = filterOptions(wfData, 'WELLNAME', { Asset: asset || null, FIELD: field || null })

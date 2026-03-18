@@ -118,6 +118,15 @@ export default function MaintenanceTicketPage() {
   const repairs = ((data?.repairs || []) as Record<string, unknown>[])[0] || {}
   const comments = (data?.comments || []) as Record<string, unknown>[]
 
+  const STATUS_BG: Record<string, string> = {
+    'Open':           'bg-green-50',
+    'In Progress':    'bg-purple-50',
+    'Backlogged':     'bg-yellow-50',
+    'Awaiting Cost':  'bg-gray-50',
+    'Closed':         'bg-red-50',
+  }
+  const pageBg = STATUS_BG[ticket.Ticket_Status as string] ?? 'bg-white'
+
   const locationLine = ticket.Location_Type === 'Well'
     ? `Well: ${ticket.Well || '—'}`
     : `Facility: ${ticket.Facility || '—'}`
@@ -206,7 +215,7 @@ export default function MaintenanceTicketPage() {
   const TABS: Tab[] = ['Summary', 'Initial Report', 'Dispatch', 'Repairs / Closeout']
 
   return (
-    <div className="flex flex-col min-h-screen pb-16">
+    <div className={`flex flex-col min-h-screen pb-16 ${pageBg}`}>
       {/* Header */}
       <div className="page-header">
         <button onClick={() => router.back()} className="p-1 -ml-1">

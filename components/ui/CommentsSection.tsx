@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { formatDate } from '@/lib/utils'
-import { CornerDownRight, Trash2 } from 'lucide-react'
+import { CornerDownRight, Trash2, Reply } from 'lucide-react'
 
 type Comment = {
   id: number
@@ -85,9 +85,14 @@ export default function CommentsSection({ comments, ticketId, userName, userEmai
         <p className="text-sm text-gray-800 mt-1">{c.body}</p>
         {!indented && (
           <button
-            className="text-xs text-[#1B2E6B] font-medium mt-2"
+            className={`flex items-center gap-1 text-xs font-semibold mt-2 px-2 py-1 rounded-full border transition-colors ${
+              replyToId === c.id
+                ? 'border-gray-300 text-gray-500'
+                : 'border-[#1B2E6B] text-[#1B2E6B]'
+            }`}
             onClick={() => setReplyToId(replyToId === c.id ? null : c.id)}
           >
+            <Reply size={12} />
             {replyToId === c.id ? 'Cancel' : 'Reply'}
           </button>
         )}

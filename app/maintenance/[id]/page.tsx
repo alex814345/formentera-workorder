@@ -7,6 +7,7 @@ import BottomNav from '@/components/layout/BottomNav'
 import LocationDropdowns from '@/components/forms/LocationDropdowns'
 import { useAuth } from '@/components/AuthProvider'
 import { formatDate, formatDateShort, DEPARTMENTS, LOCATION_TYPES, WORK_ORDER_DECISIONS, FINAL_STATUSES, PRIORITY_OPTIONS } from '@/lib/utils'
+import CommentsSection from '@/components/ui/CommentsSection'
 import type { LocationType } from '@/types'
 
 type Tab = 'Summary' | 'Initial Report' | 'Dispatch' | 'Repairs / Closeout'
@@ -36,8 +37,6 @@ export default function MaintenanceTicketPage() {
   // Repairs form state
   const [repForm, setRepForm] = useState<Record<string, string | boolean>>({})
   const [vendorRows, setVendorRows] = useState<{ vendor: string; cost: string }[]>([{ vendor: '', cost: '' }])
-  // Comments
-  const [comment, setComment] = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -178,20 +177,7 @@ export default function MaintenanceTicketPage() {
     } finally { setSaving(false) }
   }
 
-  async function postComment(_tab_name: string) {
-    if (!comment.trim()) return
-    await fetch('/api/comments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ticket_id: id,
-        body: comment,
-        author_name: userName,
-        author_email: userEmail,
-      }),
-    })
-    setComment('')
-    // Refresh data to show new comment
+  async function refreshData() {
     const res = await fetch(`/api/tickets/${id}`)
     const updated = await res.json()
     setData(updated)
@@ -673,20 +659,13 @@ export default function MaintenanceTicketPage() {
               </div>
             </div>
 
-            {/* Comments */}
-            <div className="border-t border-gray-200 pt-4">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">Comments</h3>
-              {comments.map((c: Record<string, unknown>) => (
-                <div key={c.id as number} className="bg-gray-50 rounded-lg p-3 mb-2">
-                  <p className="text-xs text-gray-500">{c.author_name as string} · {formatDate(c.created_at as string)}</p>
-                  <p className="text-sm text-gray-800 mt-1">{c.body as string}</p>
-                </div>
-              ))}
-              <textarea className="form-textarea" placeholder="Write something..." value={comment} onChange={e => setComment(e.target.value)} />
-              <button className="btn-submit mt-2" onClick={() => postComment('dispatch')} disabled={!comment.trim()}>
-                Post
-              </button>
-            </div>
+            <CommentsSection
+              comments={comments as never}
+              ticketId={id}
+              userName={userName || ''}
+              userEmail={userEmail || ''}
+              onRefresh={refreshData}
+            />
           </div>
         )}
 
@@ -839,20 +818,13 @@ export default function MaintenanceTicketPage() {
               </button>
             </div>
 
-            {/* Comments */}
-            <div className="border-t border-gray-200 pt-4">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">Comments</h3>
-              {comments.map((c: Record<string, unknown>) => (
-                <div key={c.id as number} className="bg-gray-50 rounded-lg p-3 mb-2">
-                  <p className="text-xs text-gray-500">{c.author_name as string} · {formatDate(c.created_at as string)}</p>
-                  <p className="text-sm text-gray-800 mt-1">{c.body as string}</p>
-                </div>
-              ))}
-              <textarea className="form-textarea" placeholder="Write something..." value={comment} onChange={e => setComment(e.target.value)} />
-              <button className="btn-submit mt-2" onClick={() => postComment('repairs')} disabled={!comment.trim()}>
-                Post
-              </button>
-            </div>
+            <CommentsSection
+              comments={comments as never}
+              ticketId={id}
+              userName={userName || ''}
+              userEmail={userEmail || ''}
+              onRefresh={refreshData}
+            />
           </div>
         )}
       </div>

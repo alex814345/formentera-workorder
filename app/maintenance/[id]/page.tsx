@@ -23,6 +23,7 @@ export default function MaintenanceTicketPage() {
   const [irPhotos, setIrPhotos] = useState<string[]>([])
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [deletePhotoIdx, setDeletePhotoIdx] = useState<number | null>(null)
   const [employees, setEmployees] = useState<{ id: number; name: string }[]>([])
   const [vendors, setVendors] = useState<string[]>([])
   const [equipmentTypes, setEquipmentTypes] = useState<{ id: string; equipment_type: string }[]>([])
@@ -521,8 +522,8 @@ export default function MaintenanceTicketPage() {
                           />
                           <button
                             type="button"
-                            onClick={() => setIrPhotos(irPhotos.filter((_, j) => j !== i))}
-                            className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                            onClick={() => setDeletePhotoIdx(i)}
+                            className="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
                           >
                             <X size={12} />
                           </button>
@@ -548,6 +549,33 @@ export default function MaintenanceTicketPage() {
             <button className="btn-primary" onClick={saveInitialReport} disabled={saving}>
               {saving ? 'Updating…' : 'Update'}
             </button>
+          </div>
+        )}
+
+        {/* Delete photo confirmation modal */}
+        {deletePhotoIdx !== null && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-3">
+              <h3 className="text-lg font-bold text-gray-900">Delete Photo?</h3>
+              <p className="text-sm text-gray-500">This action cannot be undone.</p>
+              <button
+                type="button"
+                className="w-full py-3 rounded-xl bg-gray-900 text-white font-semibold"
+                onClick={() => {
+                  setIrPhotos(irPhotos.filter((_, j) => j !== deletePhotoIdx))
+                  setDeletePhotoIdx(null)
+                }}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold"
+                onClick={() => setDeletePhotoIdx(null)}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 

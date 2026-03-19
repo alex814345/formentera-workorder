@@ -242,7 +242,7 @@ export default function MaintenanceFormPage() {
                       <button
                         type="button"
                         onClick={() => set('Issue_Photos', form.Issue_Photos.filter((_, j) => j !== i))}
-                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                        className="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
                       >
                         <X size={12} />
                       </button>

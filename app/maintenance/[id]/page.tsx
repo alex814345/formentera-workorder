@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, ChevronDown } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Camera, X } from 'lucide-react'
 import Accordion from '@/components/ui/Accordion'
 import BottomNav from '@/components/layout/BottomNav'
 import LocationDropdowns from '@/components/forms/LocationDropdowns'
@@ -20,6 +20,9 @@ export default function MaintenanceTicketPage() {
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [irPhotos, setIrPhotos] = useState<string[]>([])
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [employees, setEmployees] = useState<{ id: number; name: string }[]>([])
   const [vendors, setVendors] = useState<string[]>([])
   const [equipmentTypes, setEquipmentTypes] = useState<{ id: string; equipment_type: string }[]>([])
@@ -46,6 +49,7 @@ export default function MaintenanceTicketPage() {
       setVendors(vends || [])
 
       const t = ticketData.ticket || {}
+      setIrPhotos(Array.isArray(t.Issue_Photos) ? t.Issue_Photos : [])
       setIrForm({
         Department: t.Department || '',
         Location_Type: t.Location_Type || '',
@@ -148,6 +152,7 @@ export default function MaintenanceTicketPage() {
           Issue_Description: irForm.Issue_Description,
           Troubleshooting_Conducted: irForm.Troubleshooting_Conducted,
           assigned_foreman: irForm.assigned_foreman,
+          Issue_Photos: irPhotos,
         }),
       })
       alert('Updated successfully.')
@@ -466,6 +471,67 @@ export default function MaintenanceTicketPage() {
                     <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
+                {/* Issue Photos */}
+                <div>
+                  <label className="form-label">Issue Photos</label>
+                  <div
+                    className={`form-input flex items-center justify-between cursor-pointer ${uploadingPhotos ? 'opacity-50 pointer-events-none' : ''}`}
+                    onClick={() => document.getElementById('ir-photo-input')?.click()}
+                  >
+                    <span className="text-gray-400">{uploadingPhotos ? 'Uploading…' : 'Attach an image'}</span>
+                    <Camera size={20} className="text-gray-400" />
+                  </div>
+                  <input
+                    id="ir-photo-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || [])
+                      if (!files.length) return
+                      setUploadingPhotos(true)
+                      try {
+                        const urls = await Promise.all(files.map(async (file) => {
+                          const fd = new FormData()
+                          fd.append('file', file)
+                          const res = await fetch('/api/upload', { method: 'POST', body: fd })
+                          if (!res.ok) throw new Error('Upload failed')
+                          const { url } = await res.json()
+                          return url as string
+                        }))
+                        setIrPhotos(prev => [...prev, ...urls])
+                      } catch {
+                        alert('Failed to upload photo. Please try again.')
+                      } finally {
+                        setUploadingPhotos(false)
+                      }
+                    }}
+                  />
+                  {irPhotos.length > 0 && (
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {irPhotos.map((url, i) => (
+                        <div key={i} className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt="Issue photo"
+                            className="w-20 h-20 object-cover rounded-lg cursor-pointer"
+                            onClick={() => setPreviewUrl(url)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setIrPhotos(irPhotos.filter((_, j) => j !== i))}
+                            className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between">
                   <label className="form-label mb-0">Self Dispatch?</label>
                   <button
@@ -482,6 +548,29 @@ export default function MaintenanceTicketPage() {
             <button className="btn-primary" onClick={saveInitialReport} disabled={saving}>
               {saving ? 'Updating…' : 'Update'}
             </button>
+          </div>
+        )}
+
+        {/* Full-screen photo preview modal */}
+        {previewUrl && (
+          <div
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+            onClick={() => setPreviewUrl(null)}
+          >
+            <button
+              type="button"
+              className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-1"
+              onClick={() => setPreviewUrl(null)}
+            >
+              <X size={24} />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="max-w-full max-h-full rounded-lg object-contain"
+              onClick={e => e.stopPropagation()}
+            />
           </div>
         )}
 

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronDown, Camera } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Camera, X } from 'lucide-react'
 import LocationDropdowns from '@/components/forms/LocationDropdowns'
 import SearchableSelect from '@/components/ui/SearchableSelect'
 import { DEPARTMENTS, LOCATION_TYPES } from '@/lib/utils'
@@ -12,6 +12,8 @@ export default function MaintenanceFormPage() {
   const router = useRouter()
   const { userEmail, userName } = useAuth()
   const [submitting, setSubmitting] = useState(false)
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [equipmentTypes, setEquipmentTypes] = useState<{ id: string; equipment_type: string }[]>([])
   const [equipment, setEquipment] = useState<{ id: number; equip_name: string }[]>([])
   const [employees, setEmployees] = useState<{ id: number; name: string }[]>([])
@@ -195,8 +197,8 @@ export default function MaintenanceFormPage() {
             {/* Issue Photos */}
             <div>
               <label className="form-label">Issue Photos</label>
-              <div className="form-input flex items-center justify-between cursor-pointer" onClick={() => document.getElementById('issue-photo-input')?.click()}>
-                <span className="text-gray-400">Attach an image</span>
+              <div className={`form-input flex items-center justify-between cursor-pointer ${uploadingPhotos ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => document.getElementById('issue-photo-input')?.click()}>
+                <span className="text-gray-400">{uploadingPhotos ? 'Uploading…' : 'Attach an image'}</span>
                 <Camera size={20} className="text-gray-400" />
               </div>
               <input
@@ -206,18 +208,69 @@ export default function MaintenanceFormPage() {
                 multiple
                 className="hidden"
                 onChange={async (e) => {
-                  // In production: upload to Supabase Storage and store URLs
                   const files = Array.from(e.target.files || [])
-                  const urls = files.map(f => URL.createObjectURL(f))
-                  set('Issue_Photos', urls)
+                  if (!files.length) return
+                  setUploadingPhotos(true)
+                  try {
+                    const urls = await Promise.all(files.map(async (file) => {
+                      const fd = new FormData()
+                      fd.append('file', file)
+                      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+                      if (!res.ok) throw new Error('Upload failed')
+                      const { url } = await res.json()
+                      return url as string
+                    }))
+                    set('Issue_Photos', [...form.Issue_Photos, ...urls])
+                  } catch {
+                    alert('Failed to upload photo. Please try again.')
+                  } finally {
+                    setUploadingPhotos(false)
+                  }
                 }}
               />
               {form.Issue_Photos.length > 0 && (
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {form.Issue_Photos.map((url, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={url} alt="Issue photo" className="w-16 h-16 object-cover rounded-lg" />
+                    <div key={i} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt="Issue photo"
+                        className="w-20 h-20 object-cover rounded-lg cursor-pointer"
+                        onClick={() => setPreviewUrl(url)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => set('Issue_Photos', form.Issue_Photos.filter((_, j) => j !== i))}
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
                   ))}
+                </div>
+              )}
+
+              {/* Full-screen preview modal */}
+              {previewUrl && (
+                <div
+                  className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+                  onClick={() => setPreviewUrl(null)}
+                >
+                  <button
+                    type="button"
+                    className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-1"
+                    onClick={() => setPreviewUrl(null)}
+                  >
+                    <X size={24} />
+                  </button>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="max-w-full max-h-full rounded-lg object-contain"
+                    onClick={e => e.stopPropagation()}
+                  />
                 </div>
               )}
             </div>

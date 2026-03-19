@@ -94,7 +94,7 @@ export default function SearchableSelect({
           </div>
 
           {/* Options list */}
-          <div className="max-h-52 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="text-sm text-gray-400 px-3 py-3 text-center">No results</p>
             ) : (

@@ -102,22 +102,64 @@ export default function MaintenancePage() {
   const SearchableSelectFilter = ({ label, value, onChange, options }: {
     label: string; value: string; onChange: (v: string) => void; options: string[]
   }) => {
+    const [open, setOpen] = useState(false)
     const [q, setQ] = useState('')
     const filtered = q ? options.filter(o => o.toLowerCase().includes(q.toLowerCase())) : options
     return (
-      <div>
+      <div className="relative">
         <label className="form-label">{label}</label>
-        <div className="relative mb-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" className="form-input pl-8 text-sm py-1.5" placeholder={`Search ${label.toLowerCase()}…`} value={q} onChange={e => setQ(e.target.value)} />
-        </div>
-        <div className="relative">
-          <select className="form-select" value={value} onChange={e => onChange(e.target.value)}>
-            <option value="All">All</option>
-            {filtered.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-          <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-        </div>
+        <button
+          type="button"
+          className="form-select text-left w-full flex items-center justify-between"
+          onClick={() => setOpen(v => !v)}
+        >
+          <span className={value === 'All' ? 'text-gray-400' : 'text-gray-900'}>
+            {value === 'All' ? `All` : value}
+          </span>
+          <ChevronDown size={16} className="text-gray-400 shrink-0" />
+        </button>
+
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setQ('') }} />
+            <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl">
+              <div className="p-2 border-b border-gray-100">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    autoFocus
+                    type="text"
+                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1B2E6B]"
+                    placeholder="Search..."
+                    value={q}
+                    onChange={e => setQ(e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+              <ul className="max-h-48 overflow-y-auto py-1">
+                <li
+                  className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 ${value === 'All' ? 'font-medium text-[#1B2E6B]' : 'text-gray-700'}`}
+                  onClick={() => { onChange('All'); setOpen(false); setQ('') }}
+                >
+                  All
+                </li>
+                {filtered.map(o => (
+                  <li
+                    key={o}
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 ${value === o ? 'font-medium text-[#1B2E6B]' : 'text-gray-700'}`}
+                    onClick={() => { onChange(o); setOpen(false); setQ('') }}
+                  >
+                    {o}
+                  </li>
+                ))}
+                {filtered.length === 0 && (
+                  <li className="px-4 py-2 text-sm text-gray-400">No results</li>
+                )}
+              </ul>
+            </div>
+          </>
+        )}
       </div>
     )
   }

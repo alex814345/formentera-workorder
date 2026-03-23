@@ -98,21 +98,21 @@ function buildEmailParts(r: TicketRow) {
       ).join('')}</div>`
     : ''
 
-  const bodyHtml = deeplinkHtml + locHtml + eqpHtml + issueHtml + photosHtml
+  const sectionsHtml = locHtml + eqpHtml + issueHtml + photosHtml
 
-  return { id, wfValue, bodyHtml }
+  return { id, wfValue, deeplinkHtml, sectionsHtml }
 }
 
 export function newTicketEmail(r: TicketRow) {
-  const { id, wfValue, bodyHtml } = buildEmailParts(r)
+  const { id, wfValue, deeplinkHtml, sectionsHtml } = buildEmailParts(r)
   return {
     subject: `New ticket #${id} — ${wfValue}`,
-    html: bodyHtml,
+    html: deeplinkHtml + sectionsHtml,
   }
 }
 
 export function newTicketDispatchEmail(r: TicketRow, dispatch: DispatchExtras & { maintenance_foreman?: string }) {
-  const { id, wfValue, bodyHtml } = buildEmailParts(r)
+  const { id, wfValue, deeplinkHtml, sectionsHtml } = buildEmailParts(r)
 
   const hasVal = (v?: string) => v != null && v.trim() !== '' && v !== '—'
 
@@ -134,12 +134,12 @@ export function newTicketDispatchEmail(r: TicketRow, dispatch: DispatchExtras & 
 
   return {
     subject: `Ticket #${id} Dispatched — ${wfValue}`,
-    html: dispatchHtml + bodyHtml,
+    html: deeplinkHtml + dispatchHtml + sectionsHtml,
   }
 }
 
 export function selfDispatchEmail(r: TicketRow, dispatch: DispatchExtras) {
-  const { id, wfValue, bodyHtml } = buildEmailParts(r)
+  const { id, wfValue, deeplinkHtml, sectionsHtml } = buildEmailParts(r)
 
   const toTitleCase = (s?: string) =>
     s ? s.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '—'
@@ -160,6 +160,6 @@ export function selfDispatchEmail(r: TicketRow, dispatch: DispatchExtras) {
 
   return {
     subject: `Ticket #${id} Self Dispatched — ${wfValue}`,
-    html: dispatchHtml + bodyHtml,
+    html: deeplinkHtml + dispatchHtml + sectionsHtml,
   }
 }

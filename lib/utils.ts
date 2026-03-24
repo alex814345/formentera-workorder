@@ -60,12 +60,12 @@ export const WORK_ORDER_DECISIONS = [
 ]
 
 export const FINAL_STATUSES = [
-  'Repaired – Returned to Service',
-  'Replaced – Returned to Service',
-  'Monitoring – No Repair Needed',
-  'Parts Ordered – Pending Repair',
-  'Deferred – Scheduled for Later',
-  'Unable to Repair – Escalated',
+  'Repaired - Returned to Service',
+  'No Action - Returned to Service',
+  'Repaired - Awaiting Final Cost',
+  'Backlog - Awaiting Parts',
+  'Backlog - Not Economical',
+  'Decommissioned / Retired',
 ]
 
 export const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Urgent / Critical']

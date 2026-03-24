@@ -34,3 +34,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { url } = await req.json()
+    if (!url) return NextResponse.json({ error: 'No URL provided' }, { status: 400 })
+
+    const marker = '/work-orders/'
+    const idx = url.indexOf(marker)
+    if (idx === -1) return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+
+    const path = url.slice(idx + marker.length)
+    const db = supabaseAdmin()
+    const { error } = await db.storage.from('work-orders').remove([path])
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Delete error:', error)
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  }
+}

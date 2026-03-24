@@ -12,8 +12,8 @@ export async function GET(
     const [ticketRes, dispatchRes, repairsRes, vendorRes, commentsRes] = await Promise.all([
       db.from('Maintenance_Form_Submission').select('*').eq('id', id).single(),
       db.from('Dispatch').select('*').eq('ticket_id', id).order('created_at', { ascending: false }),
-      db.from('Repairs_Closeout').select('*').eq('ticket_id', id).order('created_at', { ascending: false }),
-      db.from('vendor_payment_details').select('*').eq('ticket_id', id).maybeSingle(),
+      db.from('Repairs_Closeout').select('*').eq('ticket_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      db.from('vendor_payment_details').select('*').eq('ticket_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       db.from('comments').select('*').eq('ticket_id', id).order('created_at', { ascending: true }),
     ])
 
@@ -22,7 +22,7 @@ export async function GET(
     return NextResponse.json({
       ticket: ticketRes.data,
       dispatch: dispatchRes.data || [],
-      repairs: repairsRes.data || [],
+      repairs: repairsRes.data || null,
       vendors: vendorRes.data || null,
       comments: commentsRes.data || [],
     })

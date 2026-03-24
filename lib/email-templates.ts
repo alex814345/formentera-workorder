@@ -1,5 +1,26 @@
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://formentera-workorder.vercel.app'
 
+type RepairRow = {
+  final_status?: string
+  start_date?: string
+  Work_Order_Type?: string
+  Priority_of_Issue?: string
+  repair_details?: string
+  date_completed?: string
+  repair_images?: string[]
+}
+
+type VendorDetails = {
+  vendor?: string;      vendor_cost?: number
+  vendor_2?: string;    vendor_cost_2?: number
+  vendor_3?: string;    vendor_cost_3?: number
+  vendor_4?: string;    vendor_cost_4?: number
+  vendor_5?: string;    vendor_cost_5?: number
+  vendor_6?: string;    vendor_cost_6?: number
+  vendor_7?: string;    vendor_cost_7?: number
+  total_cost?: number
+}
+
 type TicketRow = {
   id: number
   Department?: string
@@ -135,6 +156,52 @@ export function newTicketDispatchEmail(r: TicketRow, dispatch: DispatchExtras & 
   return {
     subject: `Ticket #${id} Dispatched — ${wfValue}`,
     html: deeplinkHtml + dispatchHtml + sectionsHtml,
+  }
+}
+
+export function repairCloseoutEmail(r: TicketRow, repairs: RepairRow, vendorData: VendorDetails | null) {
+  const { id, wfValue, deeplinkHtml, sectionsHtml } = buildEmailParts(r)
+  const priority = clean(repairs.Priority_of_Issue)
+
+  const repairsHtml = section('Repairs / Closeout Details', [
+    `Final Status: ${clean(repairs.final_status)}`,
+    `Start Date: ${fmtDate(repairs.start_date)}`,
+    `Work Order Type: ${clean(repairs.Work_Order_Type)}`,
+    `Priority of Issue: ${priority}`,
+    `Repair Details: ${clean(repairs.repair_details)}`,
+    `Date Completed: ${fmtDate(repairs.date_completed)}`,
+  ])
+
+  const vendorLines: string[] = []
+  if (vendorData) {
+    const pairs: [string | undefined, number | undefined][] = [
+      [vendorData.vendor,   vendorData.vendor_cost],
+      [vendorData.vendor_2, vendorData.vendor_cost_2],
+      [vendorData.vendor_3, vendorData.vendor_cost_3],
+      [vendorData.vendor_4, vendorData.vendor_cost_4],
+      [vendorData.vendor_5, vendorData.vendor_cost_5],
+      [vendorData.vendor_6, vendorData.vendor_cost_6],
+      [vendorData.vendor_7, vendorData.vendor_cost_7],
+    ]
+    pairs.forEach(([v, c], i) => {
+      if (v) vendorLines.push(`Vendor ${i + 1}: ${v} — $${(c ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`)
+    })
+    if (vendorData.total_cost != null) {
+      vendorLines.push(`Total Cost: $${vendorData.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`)
+    }
+  }
+  const vendorHtml = vendorLines.length > 0 ? section('Vendor Payment Details', vendorLines) : ''
+
+  const repairImgUrls = Array.isArray(repairs.repair_images) ? repairs.repair_images.filter(Boolean) : []
+  const repairImagesHtml = repairImgUrls.length
+    ? `<div style="margin:14px 0;"><strong>Repair Photos</strong><br><br>${repairImgUrls.map((u, i) =>
+        `<div style="margin:8px 0;"><img src="${u}" alt="Repair photo ${i + 1}" style="max-width:600px;width:100%;height:auto;display:block;border-radius:8px;"></div>`
+      ).join('')}</div>`
+    : ''
+
+  return {
+    subject: `Repair / Closeout for ticket #${id} – ${wfValue} (${priority})`,
+    html: deeplinkHtml + repairsHtml + vendorHtml + repairImagesHtml + sectionsHtml,
   }
 }
 

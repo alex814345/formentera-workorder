@@ -37,6 +37,9 @@ export default function MaintenanceTicketPage() {
   // Repairs form state
   const [repForm, setRepForm] = useState<Record<string, string | boolean>>({})
   const [vendorRows, setVendorRows] = useState<{ vendor: string; cost: string }[]>([{ vendor: '', cost: '' }])
+  const [repairPhotos, setRepairPhotos] = useState<string[]>([])
+  const [uploadingRepairPhotos, setUploadingRepairPhotos] = useState(false)
+  const [deleteRepairPhotoIdx, setDeleteRepairPhotoIdx] = useState<number | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -77,11 +80,12 @@ export default function MaintenanceTicketPage() {
         date_assigned: d.date_assigned || new Date().toISOString(),
       })
 
-      const rc = (ticketData.repairs || [])[0] || {}
+      const rc = ticketData.repairs || {}
+      setRepairPhotos(Array.isArray(rc.repair_images) ? rc.repair_images : [])
       const vd = ticketData.vendors || {}
       setRepForm({
         final_status: rc.final_status || '',
-        start_date: rc.start_date || '',
+        start_date: rc.start_date || new Date().toISOString(),
         Work_Order_Type: rc.Work_Order_Type || '',
         Priority_of_Issue: rc.Priority_of_Issue || 'Low',
         repair_details: rc.repair_details || '',
@@ -127,7 +131,7 @@ export default function MaintenanceTicketPage() {
 
   const ticket = (data?.ticket || {}) as Record<string, unknown>
   const dispatch = ((data?.dispatch || []) as Record<string, unknown>[])[0] || {}
-  const repairs = ((data?.repairs || []) as Record<string, unknown>[])[0] || {}
+  const repairs = (data?.repairs || {}) as Record<string, unknown>
   const comments = (data?.comments || []) as Record<string, unknown>[]
 
 
@@ -195,8 +199,12 @@ export default function MaintenanceTicketPage() {
         body: JSON.stringify({
           ticket_id: id,
           ...repForm,
+          repair_images: repairPhotos,
           vendors: vendorRows.filter(r => r.vendor).map(r => ({ vendor: r.vendor, cost: parseFloat(r.cost) || 0 })),
           created_by: userName,
+          current_user_email: userEmail,
+          assigned_foreman: dispatch.maintenance_foreman || dispatch.production_foreman || null,
+          production_foreman: dispatch.production_foreman || null,
         }),
       })
       alert('Repairs saved. Original sender notified.')
@@ -586,6 +594,45 @@ export default function MaintenanceTicketPage() {
           </div>
         )}
 
+        {/* Repair photo delete confirmation modal */}
+        {deleteRepairPhotoIdx !== null && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-3">
+              <h3 className="text-lg font-bold text-gray-900">Delete Photo?</h3>
+              <p className="text-sm text-gray-500">This action cannot be undone.</p>
+              <button
+                type="button"
+                className="w-full py-3 rounded-xl bg-gray-900 text-white font-semibold"
+                onClick={async () => {
+                  const url = repairPhotos[deleteRepairPhotoIdx!]
+                  const updated = repairPhotos.filter((_, j) => j !== deleteRepairPhotoIdx)
+                  setRepairPhotos(updated)
+                  setDeleteRepairPhotoIdx(null)
+                  await fetch('/api/upload', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                  }).catch(err => console.error('Storage delete failed:', err))
+                  await fetch('/api/repairs', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket_id: id, repair_images: updated }),
+                  }).catch(err => console.error('Repair images update failed:', err))
+                }}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold"
+                onClick={() => setDeleteRepairPhotoIdx(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Full-screen photo preview modal */}
         {previewUrl && (
           <div
@@ -748,7 +795,7 @@ export default function MaintenanceTicketPage() {
                 <div className="relative">
                   <select className="form-select" value={repForm.Work_Order_Type as string} onChange={e => setRep('Work_Order_Type', e.target.value)}>
                     <option value="">Select Work Order Type</option>
-                    {['LOE', 'Capital', 'AFE', 'Emergency'].map(t => <option key={t} value={t}>{t}</option>)}
+                    {['AFE - Workover', 'AFE - Capital', 'LOE'].map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
@@ -782,11 +829,62 @@ export default function MaintenanceTicketPage() {
               {/* Repair Images */}
               <div>
                 <label className="form-label">Repair Images</label>
-                <div className="form-input flex items-center justify-between cursor-pointer" onClick={() => document.getElementById('repair-photo-input')?.click()}>
-                  <span className="text-gray-400">Attach an image</span>
-                  <span className="text-gray-400 text-lg">📎</span>
+                <div
+                  className={`form-input flex items-center justify-between cursor-pointer ${uploadingRepairPhotos ? 'opacity-50 pointer-events-none' : ''}`}
+                  onClick={() => document.getElementById('repair-photo-input')?.click()}
+                >
+                  <span className="text-gray-400">{uploadingRepairPhotos ? 'Uploading…' : 'Attach an image'}</span>
+                  <Camera size={20} className="text-gray-400" />
                 </div>
-                <input id="repair-photo-input" type="file" accept="image/*" multiple className="hidden" />
+                <input
+                  id="repair-photo-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || [])
+                    if (!files.length) return
+                    setUploadingRepairPhotos(true)
+                    try {
+                      const urls = await Promise.all(files.map(async (file) => {
+                        const fd = new FormData()
+                        fd.append('file', file)
+                        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+                        if (!res.ok) throw new Error('Upload failed')
+                        const { url } = await res.json()
+                        return url as string
+                      }))
+                      setRepairPhotos(prev => [...prev, ...urls])
+                    } catch {
+                      alert('Failed to upload photo. Please try again.')
+                    } finally {
+                      setUploadingRepairPhotos(false)
+                    }
+                  }}
+                />
+                {repairPhotos.length > 0 && (
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {repairPhotos.map((url, i) => (
+                      <div key={i} className="relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt="Repair photo"
+                          className="w-20 h-20 object-cover rounded-lg cursor-pointer"
+                          onClick={() => setPreviewUrl(url)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setDeleteRepairPhotoIdx(i)}
+                          className="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Vendor rows */}
@@ -817,14 +915,18 @@ export default function MaintenanceTicketPage() {
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         className="form-input pl-7 text-sm"
                         placeholder="Enter Value"
                         value={row.cost}
                         onChange={e => {
-                          const rows = [...vendorRows]
-                          rows[i] = { ...rows[i], cost: e.target.value }
-                          setVendorRows(rows)
+                          const val = e.target.value
+                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                            const rows = [...vendorRows]
+                            rows[i] = { ...rows[i], cost: val }
+                            setVendorRows(rows)
+                          }
                         }}
                       />
                     </div>

@@ -7,6 +7,9 @@ type RepairRow = {
   Priority_of_Issue?: string
   repair_details?: string
   date_completed?: string
+  date_closed?: string
+  closed_by?: string
+  total_repair_cost?: number
   repair_images?: string[]
 }
 
@@ -132,10 +135,13 @@ export function newTicketEmail(r: TicketRow) {
   }
 }
 
-export function newTicketDispatchEmail(r: TicketRow, dispatch: DispatchExtras & { maintenance_foreman?: string }) {
+export function newTicketDispatchEmail(r: TicketRow, dispatch: DispatchExtras & { maintenance_foreman?: string; production_foreman?: string; self_dispatch_assignee?: string }) {
   const { id, wfValue, deeplinkHtml, sectionsHtml } = buildEmailParts(r)
 
   const hasVal = (v?: string) => v != null && v.trim() !== '' && v !== '—'
+
+  const toTitleCase = (s?: string) =>
+    s ? s.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '—'
 
   const estimatedCost = (() => {
     const n = Number(r.Estimate_Cost)
@@ -145,34 +151,62 @@ export function newTicketDispatchEmail(r: TicketRow, dispatch: DispatchExtras & 
   })()
 
   const dispatchLines = [
-    `Work Order Decision: ${dispatch.work_order_decision ?? 'Proceed with Repair'}`,
+    `Work Order Decision: ${clean(dispatch.work_order_decision)}`,
     ...(hasVal(estimatedCost) && estimatedCost !== '—' ? [`Estimated Cost: ${estimatedCost}`] : []),
+    ...(hasVal(dispatch.self_dispatch_assignee) ? [`Self Dispatch Assignee: ${toTitleCase(dispatch.self_dispatch_assignee)}`] : []),
     ...(hasVal(dispatch.maintenance_foreman) ? [`Assigned Foreman: ${dispatch.maintenance_foreman}`] : []),
+    ...(hasVal(dispatch.production_foreman) ? [`Production Foreman: ${dispatch.production_foreman}`] : []),
     `Date Assigned: ${fmtDate(dispatch.date_assigned)}`,
   ]
 
   const dispatchHtml = section('Dispatch Details', dispatchLines)
 
   return {
-    subject: `Ticket #${id} Dispatched — ${wfValue}`,
+    subject: `Ticket #${id} Dispatched – ${wfValue}`,
     html: deeplinkHtml + dispatchHtml + sectionsHtml,
   }
 }
 
-export function repairCloseoutEmail(r: TicketRow, repairs: RepairRow, vendorData: VendorDetails | null) {
+type DispatchData = {
+  work_order_decision?: string
+  Estimate_Cost?: number | null
+  self_dispatch_assignee?: string
+  maintenance_foreman?: string
+  production_foreman?: string
+  date_assigned?: string
+}
+
+export function repairCloseoutEmail(
+  r: TicketRow,
+  repairs: RepairRow,
+  vendorData: VendorDetails | null,
+  dispatch: DispatchData | null,
+) {
   const { id, wfValue, deeplinkHtml, sectionsHtml } = buildEmailParts(r)
   const priority = clean(repairs.Priority_of_Issue)
 
-  const repairsHtml = section('Repairs / Closeout Details', [
-    `Final Status: ${clean(repairs.final_status)}`,
-    `Start Date: ${fmtDate(repairs.start_date)}`,
-    `Work Order Type: ${clean(repairs.Work_Order_Type)}`,
-    `Priority of Issue: ${priority}`,
-    `Repair Details: ${clean(repairs.repair_details)}`,
-    `Date Completed: ${fmtDate(repairs.date_completed)}`,
-  ])
+  const hasVal = (v: unknown) => v != null && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'null' && String(v).trim() !== '—'
 
-  const vendorLines: string[] = []
+  const fmtMoney = (v: unknown): string => {
+    const n = Number(String(v).replace(/[^\d.-]/g, ''))
+    return Number.isFinite(n)
+      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n)
+      : clean(v)
+  }
+
+  const toTitleCase = (s: unknown): string => {
+    const str = clean(s)
+    if (str === '—') return str
+    return str.toLowerCase().split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+  }
+
+  // Total repair cost: prefer vpd.total_cost, else rc.total_repair_cost
+  const totalRepairCost = vendorData?.total_cost != null && String(vendorData.total_cost).trim() !== ''
+    ? fmtMoney(vendorData.total_cost)
+    : repairs.total_repair_cost != null ? fmtMoney(repairs.total_repair_cost) : '—'
+
+  // Vendor breakdown lines
+  const vendorBreakdownLines: string[] = []
   if (vendorData) {
     const pairs: [string | undefined, number | undefined][] = [
       [vendorData.vendor,   vendorData.vendor_cost],
@@ -184,24 +218,59 @@ export function repairCloseoutEmail(r: TicketRow, repairs: RepairRow, vendorData
       [vendorData.vendor_7, vendorData.vendor_cost_7],
     ]
     pairs.forEach(([v, c], i) => {
-      if (v) vendorLines.push(`Vendor ${i + 1}: ${v} — $${(c ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`)
+      if (hasVal(v) || hasVal(c)) {
+        const nm = clean(v)
+        const cs = hasVal(c) ? fmtMoney(c) : ''
+        vendorBreakdownLines.push(`Vendor ${i + 1}: ${nm}${cs ? ` — Cost: ${cs}` : ''}`)
+      }
     })
-    if (vendorData.total_cost != null) {
-      vendorLines.push(`Total Cost: $${vendorData.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`)
-    }
   }
-  const vendorHtml = vendorLines.length > 0 ? section('Vendor Payment Details', vendorLines) : ''
 
+  // Repair / Closeout Details (with vendor breakdown nested inside)
+  const closeoutLines: string[] = [
+    ...(hasVal(repairs.final_status) ? [`Final Status: ${clean(repairs.final_status)}`] : []),
+    ...(hasVal(repairs.start_date) ? [`Start Date: ${fmtDate(repairs.start_date)}`] : []),
+    ...(hasVal(repairs.Work_Order_Type) ? [`Work Order Type: ${clean(repairs.Work_Order_Type)}`] : []),
+    ...(hasVal(priority) && priority !== '—' ? [`Priority: ${priority}`] : []),
+    ...(hasVal(repairs.repair_details) ? [`Repair Details: ${clean(repairs.repair_details)}`] : []),
+    ...(hasVal(totalRepairCost) && totalRepairCost !== '—' ? [`Total Repair Cost: ${totalRepairCost}`] : []),
+    ...(hasVal(repairs.date_completed) ? [`Date Completed: ${fmtDate(repairs.date_completed)}`] : []),
+    ...(hasVal(repairs.date_closed) ? [`Date Closed: ${fmtDate(repairs.date_closed)}`] : []),
+    ...(hasVal(repairs.closed_by) ? [`Closed By: ${toTitleCase(repairs.closed_by)}`] : []),
+    ...(vendorBreakdownLines.length ? ['<br><strong>Vendor Breakdown</strong><br>', ...vendorBreakdownLines] : []),
+  ]
+  const closeoutHtml = section('Repair / Closeout Details', closeoutLines)
+
+  // Dispatch Details section
+  const estimatedCost = (() => {
+    const v = dispatch?.Estimate_Cost ?? r.Estimate_Cost
+    if (v == null || String(v).trim() === '') return '—'
+    const n = Number(v)
+    return Number.isFinite(n) ? n.toLocaleString(undefined, { style: 'currency', currency: 'USD' }) : clean(v)
+  })()
+
+  const dispatchLines: string[] = [
+    ...(hasVal(dispatch?.work_order_decision) ? [`Work Order Decision: ${clean(dispatch?.work_order_decision)}`] : []),
+    ...(hasVal(estimatedCost) && estimatedCost !== '—' ? [`Estimated Cost: ${estimatedCost}`] : []),
+    ...(hasVal(dispatch?.self_dispatch_assignee) ? [`Self Dispatch Assignee: ${toTitleCase(dispatch?.self_dispatch_assignee)}`] : []),
+    ...(hasVal(dispatch?.maintenance_foreman) ? [`Assigned Foreman: ${toTitleCase(dispatch?.maintenance_foreman)}`] : []),
+    ...(hasVal(dispatch?.production_foreman) ? [`Production Foreman: ${toTitleCase(dispatch?.production_foreman)}`] : []),
+    ...(hasVal(dispatch?.date_assigned) ? [`Date Assigned: ${fmtDate(dispatch?.date_assigned)}`] : []),
+  ]
+  const dispatchHtml = dispatchLines.length > 0 ? section('Dispatch Details', dispatchLines) : ''
+
+  // Repair Photos
   const repairImgUrls = Array.isArray(repairs.repair_images) ? repairs.repair_images.filter(Boolean) : []
-  const repairImagesHtml = repairImgUrls.length
+  const repairPhotosHtml = repairImgUrls.length
     ? `<div style="margin:14px 0;"><strong>Repair Photos</strong><br><br>${repairImgUrls.map((u, i) =>
         `<div style="margin:8px 0;"><img src="${u}" alt="Repair photo ${i + 1}" style="max-width:600px;width:100%;height:auto;display:block;border-radius:8px;"></div>`
       ).join('')}</div>`
     : ''
 
+  // Order: deeplink → closeout → dispatch → maintenance/equipment/issue/issuePhotos → repairPhotos
   return {
     subject: `Repair / Closeout for ticket #${id} – ${wfValue} (${priority})`,
-    html: deeplinkHtml + repairsHtml + vendorHtml + repairImagesHtml + sectionsHtml,
+    html: deeplinkHtml + closeoutHtml + dispatchHtml + sectionsHtml + repairPhotosHtml,
   }
 }
 

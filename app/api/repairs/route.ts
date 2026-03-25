@@ -97,14 +97,20 @@ export async function POST(req: NextRequest) {
 
     // Send repair/closeout email
     try {
-      const [ticketRes, vendorRes, dispatchRes] = await Promise.all([
+      const [ticketRes, vendorRes, dispatchRes, updatedRepairRes] = await Promise.all([
         db.from('Maintenance_Form_Submission').select('*').eq('id', body.ticket_id).single(),
-        db.from('vendor_payment_details').select('*').eq('ticket_id', body.ticket_id).maybeSingle(),
-        db.from('Dispatch').select('*').eq('ticket_id', body.ticket_id).order('created_at', { ascending: false }).limit(1).single(),
+        db.from('vendor_payment_details').select('*').eq('ticket_id', body.ticket_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        db.from('Dispatch').select('*').eq('ticket_id', body.ticket_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        db.from('Repairs_Closeout').select('*').eq('id', repairData.id).single(),
       ])
 
       if (ticketRes.data) {
-        const { subject, html } = repairCloseoutEmail(ticketRes.data, repairData, vendorRes.data || null)
+        const { subject, html } = repairCloseoutEmail(
+          ticketRes.data,
+          updatedRepairRes.data || repairData,
+          vendorRes.data || null,
+          dispatchRes.data || null,
+        )
 
         const foremanNames = [
           dispatchRes.data?.maintenance_foreman,

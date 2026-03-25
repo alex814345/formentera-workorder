@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
 
     if (ticket) {
       const { subject, html } = newTicketDispatchEmail(ticket, {
-        maintenance_foreman: body.maintenance_foreman || body.production_foreman,
+        maintenance_foreman: body.maintenance_foreman,
+        production_foreman: body.production_foreman,
+        self_dispatch_assignee: body.self_dispatch_assignee,
         date_assigned: body.date_assigned || new Date().toISOString(),
         work_order_decision: body.work_order_decision,
       })

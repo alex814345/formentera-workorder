@@ -237,7 +237,7 @@ export default function MaintenanceTicketPage() {
           {TABS.filter(t => {
             if (t !== 'Repairs / Closeout') return true
             const status = (ticket.Ticket_Status as string ?? '').toLowerCase()
-            const hasEstCost = ticket.Estimate_Cost != null && ticket.Estimate_Cost !== ''
+            const hasEstCost = (ticket.Estimate_Cost != null && ticket.Estimate_Cost !== '') || (dispatch.Estimate_Cost != null && dispatch.Estimate_Cost !== '')
             return ['in progress', 'closed', 'backlogged', 'awaiting cost'].includes(status) && hasEstCost
           }).map(t => (
             <button
@@ -256,7 +256,7 @@ export default function MaintenanceTicketPage() {
         {(() => {
           const status = (ticket.Ticket_Status as string ?? '').toLowerCase()
           const eligibleStatus = ['in progress', 'closed', 'backlogged', 'awaiting cost'].includes(status)
-          const hasEstCost = ticket.Estimate_Cost != null && ticket.Estimate_Cost !== ''
+          const hasEstCost = (ticket.Estimate_Cost != null && ticket.Estimate_Cost !== '') || (dispatch.Estimate_Cost != null && dispatch.Estimate_Cost !== '')
           if (eligibleStatus && !hasEstCost) return (
             <p className="text-xs text-amber-600 mt-2">
               Add an Estimated Cost in the Dispatch tab to unlock the Repairs / Closeout tab.

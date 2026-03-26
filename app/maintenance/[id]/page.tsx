@@ -234,7 +234,12 @@ export default function MaintenanceTicketPage() {
       <div className="px-4 pt-3 pb-2 border-b border-gray-100">
         <p className="text-xs text-gray-500 mb-2">Maintenance Workflow Selection</p>
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-          {TABS.map(t => (
+          {TABS.filter(t => {
+            if (t !== 'Repairs / Closeout') return true
+            const status = (ticket.Ticket_Status as string ?? '').toLowerCase()
+            const hasEstCost = ticket.Estimate_Cost != null && ticket.Estimate_Cost !== ''
+            return ['in progress', 'closed', 'backlogged', 'awaiting cost'].includes(status) && hasEstCost
+          }).map(t => (
             <button
               key={t}
               onClick={() => {

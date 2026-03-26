@@ -400,7 +400,7 @@ export default function MaintenanceTicketPage() {
                       <span className="detail-label">{i === 0 ? 'Vendor' : `Vendor ${i + 1}`}</span>
                       <span className="detail-value">
                         {vendorData[vk] as string}
-                        {vendorData[ck] ? ` — $${vendorData[ck]}` : ''}
+                        {rows.length > 1 && vendorData[ck] ? ` — $${vendorData[ck]}` : ''}
                       </span>
                     </div>
                   ))

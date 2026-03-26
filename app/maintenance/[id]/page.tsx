@@ -598,23 +598,25 @@ export default function MaintenanceTicketPage() {
                   </button>
                 </div>
 
-                <div>
-                  <label className="form-label">Estimated Cost</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      className="form-input pl-7"
-                      placeholder="Enter Value"
-                      value={irForm.Estimate_Cost as string}
-                      onChange={e => {
-                        const val = e.target.value
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) setIr('Estimate_Cost', val)
-                      }}
-                    />
+                {irForm.Self_Dispatch && (
+                  <div>
+                    <label className="form-label">Estimated Cost</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className="form-input pl-7"
+                        placeholder="Enter Value"
+                        value={irForm.Estimate_Cost as string}
+                        onChange={e => {
+                          const val = e.target.value
+                          if (val === '' || /^\d*\.?\d*$/.test(val)) setIr('Estimate_Cost', val)
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 

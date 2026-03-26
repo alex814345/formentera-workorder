@@ -504,16 +504,28 @@ export default function MaintenanceTicketPage() {
                   <label className="form-label">Troubleshooting Conducted</label>
                   <textarea className="form-textarea" placeholder="Detail anything you have done to repair or restart the equipment and if it was successful or not" value={irForm.Troubleshooting_Conducted as string} onChange={e => setIr('Troubleshooting_Conducted', e.target.value)} />
                 </div>
-                <div>
-                  <label className="form-label">Initial Assigned Foreman</label>
-                  <div className="relative">
-                    <select className="form-select" value={irForm.assigned_foreman as string} disabled>
-                      <option value="">Select Foreman</option>
-                      {employees.map(emp => <option key={emp.id} value={emp.name}>{emp.name}</option>)}
-                    </select>
-                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                {ticket.Self_Dispatch_Assignee ? (
+                  <div>
+                    <label className="form-label">Self Dispatch Assignee</label>
+                    <input
+                      type="text"
+                      className="form-input opacity-60 cursor-not-allowed"
+                      disabled
+                      value={String(ticket.Self_Dispatch_Assignee).trim().split(/\s+/).map((s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join(' ')}
+                    />
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="form-label">Initial Assigned Foreman</label>
+                    <div className="relative">
+                      <select className="form-select" value={irForm.assigned_foreman as string} disabled>
+                        <option value="">Select Foreman</option>
+                        {employees.map(emp => <option key={emp.id} value={emp.name}>{emp.name}</option>)}
+                      </select>
+                      <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                )}
                 {/* Issue Photos */}
                 <div>
                   <label className="form-label">Issue Photos</label>

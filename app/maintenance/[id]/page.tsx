@@ -134,6 +134,7 @@ export default function MaintenanceTicketPage() {
   const ticket = (data?.ticket || {}) as Record<string, unknown>
   const dispatch = ((data?.dispatch || []) as Record<string, unknown>[])[0] || {}
   const repairs = (data?.repairs || {}) as Record<string, unknown>
+  const vendorData = (data?.vendors || {}) as Record<string, unknown>
   const comments = (data?.comments || []) as Record<string, unknown>[]
 
 
@@ -370,8 +371,41 @@ export default function MaintenanceTicketPage() {
                   ['Work Order Type', repairs.Work_Order_Type],
                   ['Priority of Issue', repairs.Priority_of_Issue],
                   ['Repair Details', repairs.repair_details],
-                  ['Vendor', repairs.vendor],
-                  ['Repair Cost', repairs.total_repair_cost ? `$${repairs.total_repair_cost}` : '—'],
+                ].map(([label, value]) => (
+                  <div key={label as string} className="detail-row">
+                    <span className="detail-label">{label as string}</span>
+                    <span className="detail-value">{(value || '—') as string}</span>
+                  </div>
+                ))}
+                {(() => {
+                  const pairs: [string, string][] = [
+                    ['vendor', 'vendor_cost'],
+                    ['vendor_2', 'vendor_cost_2'],
+                    ['vendor_3', 'vendor_cost_3'],
+                    ['vendor_4', 'vendor_cost_4'],
+                    ['vendor_5', 'vendor_cost_5'],
+                    ['vendor_6', 'vendor_cost_6'],
+                    ['vendor_7', 'vendor_cost_7'],
+                  ]
+                  const rows = pairs.filter(([vk]) => vendorData[vk])
+                  if (rows.length === 0) return (
+                    <div className="detail-row">
+                      <span className="detail-label">Vendor</span>
+                      <span className="detail-value">—</span>
+                    </div>
+                  )
+                  return rows.map(([vk, ck], i) => (
+                    <div key={vk} className="detail-row">
+                      <span className="detail-label">{i === 0 ? 'Vendor' : `Vendor ${i + 1}`}</span>
+                      <span className="detail-value">
+                        {vendorData[vk] as string}
+                        {vendorData[ck] ? ` — $${vendorData[ck]}` : ''}
+                      </span>
+                    </div>
+                  ))
+                })()}
+                {[
+                  ['Repair Cost', vendorData.total_cost ? `$${vendorData.total_cost}` : repairs.total_repair_cost ? `$${repairs.total_repair_cost}` : '—'],
                   ['Date Completed', repairs.date_completed ? formatDateShort(repairs.date_completed as string) : '—'],
                 ].map(([label, value]) => (
                   <div key={label as string} className="detail-row">

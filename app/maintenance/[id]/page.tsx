@@ -334,7 +334,7 @@ export default function MaintenanceTicketPage() {
               </div>
             </Accordion>
 
-            <Accordion title="Dispatch Details" forceOpen={expandAll}>
+            {!!dispatch.ticket_id && <Accordion title="Dispatch Details" forceOpen={expandAll}>
               <div>
                 {[
                   ['Work Order Decision', dispatch.work_order_decision],
@@ -349,9 +349,9 @@ export default function MaintenanceTicketPage() {
                   </div>
                 ))}
               </div>
-            </Accordion>
+            </Accordion>}
 
-            <Accordion title="Repairs / Closeout Details" forceOpen={expandAll}>
+            {!!repairs.ticket_id && <Accordion title="Repairs / Closeout Details" forceOpen={expandAll}>
               <div>
                 {!!(repairs.repair_images && (repairs.repair_images as string[]).length > 0) && (
                   <div className="mb-3">
@@ -380,7 +380,7 @@ export default function MaintenanceTicketPage() {
                   </div>
                 ))}
               </div>
-            </Accordion>
+            </Accordion>}
           </div>
         )}
 

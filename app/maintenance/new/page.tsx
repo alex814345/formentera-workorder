@@ -34,8 +34,10 @@ export default function MaintenanceFormPage() {
   })
 
   useEffect(() => {
-    fetch('/api/employees').then(r => r.json()).then(setEmployees)
-  }, [])
+    const params = new URLSearchParams()
+    if (form.Asset) params.set('asset', form.Asset)
+    fetch(`/api/employees?${params}`).then(r => r.json()).then(setEmployees)
+  }, [form.Asset])
 
   useEffect(() => {
     if (form.Location_Type) {

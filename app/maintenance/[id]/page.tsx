@@ -15,7 +15,7 @@ type Tab = 'Summary' | 'Initial Report' | 'Dispatch' | 'Repairs / Closeout'
 export default function MaintenanceTicketPage() {
   const router = useRouter()
   const { id } = useParams()
-  const { userName, userEmail, role } = useAuth()
+  const { userName, userEmail, role, assets: userAssets } = useAuth()
   const [tab, setTab] = useState<Tab>('Summary')
   const [expandAll, setExpandAll] = useState(false)
   const [data, setData] = useState<Record<string, unknown> | null>(null)
@@ -138,7 +138,12 @@ export default function MaintenanceTicketPage() {
     ticket.Self_Dispatch_Assignee &&
     String(ticket.Self_Dispatch_Assignee).toLowerCase() === (userName || '').toLowerCase()
   )
-  const isReadOnly = role === 'field_user' && !isSelfDispatchedByMe
+  const ticketAsset = ticket.Asset as string
+  const isInMyAsset = userAssets.length === 0 || userAssets.includes(ticketAsset)
+  const isReadOnly =
+    role === 'admin' ? false :
+    role === 'foreman' ? !isInMyAsset :
+    !isSelfDispatchedByMe // field_user default
   const repairs = (data?.repairs || {}) as Record<string, unknown>
   const vendorData = (data?.vendors || {}) as Record<string, unknown>
   const comments = (data?.comments || []) as Record<string, unknown>[]

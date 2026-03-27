@@ -15,7 +15,7 @@ type Tab = 'Summary' | 'Initial Report' | 'Dispatch' | 'Repairs / Closeout'
 export default function MaintenanceTicketPage() {
   const router = useRouter()
   const { id } = useParams()
-  const { userName, userEmail } = useAuth()
+  const { userName, userEmail, role } = useAuth()
   const [tab, setTab] = useState<Tab>('Summary')
   const [expandAll, setExpandAll] = useState(false)
   const [data, setData] = useState<Record<string, unknown> | null>(null)
@@ -133,6 +133,12 @@ export default function MaintenanceTicketPage() {
 
   const ticket = (data?.ticket || {}) as Record<string, unknown>
   const dispatch = ((data?.dispatch || []) as Record<string, unknown>[])[0] || {}
+
+  const isSelfDispatchedByMe = !!(
+    ticket.Self_Dispatch_Assignee &&
+    String(ticket.Self_Dispatch_Assignee).toLowerCase() === (userName || '').toLowerCase()
+  )
+  const isReadOnly = role === 'field_user' && !isSelfDispatchedByMe
   const repairs = (data?.repairs || {}) as Record<string, unknown>
   const vendorData = (data?.vendors || {}) as Record<string, unknown>
   const comments = (data?.comments || []) as Record<string, unknown>[]
@@ -770,7 +776,7 @@ export default function MaintenanceTicketPage() {
                 <div>
                   <label className="form-label form-label-required">Work Order Decision</label>
                   <div className="relative">
-                    <select className="form-select" value={dispForm.work_order_decision as string} onChange={e => setDisp('work_order_decision', e.target.value)}>
+                    <select className="form-select" value={dispForm.work_order_decision as string} onChange={e => setDisp('work_order_decision', e.target.value)} disabled={isReadOnly}>
                       <option value="">Select Decision</option>
                       {WORK_ORDER_DECISIONS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -782,7 +788,7 @@ export default function MaintenanceTicketPage() {
                   <label className="form-label form-label-required">Estimated Cost</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                    <input type="text" inputMode="decimal" className={`form-input pl-8 ${!dispForm.Estimate_Cost ? 'border-red-400 ring-1 ring-red-400' : ''}`} placeholder="Enter amount" value={dispForm.Estimate_Cost as string} onChange={e => { const v = e.target.value; if (v === '' || /^\d*\.?\d*$/.test(v)) setDisp('Estimate_Cost', v) }} />
+                    <input type="text" inputMode="decimal" className={`form-input pl-8 ${!dispForm.Estimate_Cost && !isReadOnly ? 'border-red-400 ring-1 ring-red-400' : ''}`} placeholder="Enter amount" value={dispForm.Estimate_Cost as string} onChange={e => { const v = e.target.value; if (v === '' || /^\d*\.?\d*$/.test(v)) setDisp('Estimate_Cost', v) }} disabled={isReadOnly} />
                   </div>
                 </div>
 
@@ -803,7 +809,7 @@ export default function MaintenanceTicketPage() {
                     <div>
                       <label className="form-label">Assigned Foreman</label>
                       <div className="relative">
-                        <select className="form-select" value={dispForm.assigned_foreman as string} onChange={e => setDisp('assigned_foreman', e.target.value)}>
+                        <select className="form-select" value={dispForm.assigned_foreman as string} onChange={e => setDisp('assigned_foreman', e.target.value)} disabled={isReadOnly}>
                           <option value="">Select Foreman</option>
                           {employees.map(emp => <option key={emp.id} value={emp.name}>{emp.name}</option>)}
                         </select>
@@ -814,7 +820,7 @@ export default function MaintenanceTicketPage() {
                     <div>
                       <label className="form-label">Additional Assignee</label>
                       <div className="relative">
-                        <select className="form-select" value={dispForm.additional_assignee as string} onChange={e => setDisp('additional_assignee', e.target.value)}>
+                        <select className="form-select" value={dispForm.additional_assignee as string} onChange={e => setDisp('additional_assignee', e.target.value)} disabled={isReadOnly}>
                           <option value="">Select Employee</option>
                           {employees.map(emp => <option key={emp.id} value={emp.name}>{emp.name}</option>)}
                         </select>
@@ -833,18 +839,21 @@ export default function MaintenanceTicketPage() {
                         className="form-input"
                         value={dispForm.date_assigned ? (dispForm.date_assigned as string).slice(0, 16) : ''}
                         onChange={e => setDisp('date_assigned', e.target.value)}
+                        disabled={isReadOnly}
                       />
                     </div>
                   </div>
                 )}
 
-                <button
-                  className="btn-primary"
-                  onClick={saveDispatch}
-                  disabled={saving || !dispForm.work_order_decision || dispForm.Estimate_Cost === ''}
-                >
-                  {saving ? 'Dispatching…' : 'Dispatch'}
-                </button>
+                {!isReadOnly && (
+                  <button
+                    className="btn-primary"
+                    onClick={saveDispatch}
+                    disabled={saving || !dispForm.work_order_decision || dispForm.Estimate_Cost === ''}
+                  >
+                    {saving ? 'Dispatching…' : 'Dispatch'}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -872,7 +881,7 @@ export default function MaintenanceTicketPage() {
               <div>
                 <label className="form-label form-label-required">Final Status</label>
                 <div className="relative">
-                  <select className="form-select" value={repForm.final_status as string} onChange={e => setRep('final_status', e.target.value)}>
+                  <select className="form-select" value={repForm.final_status as string} onChange={e => setRep('final_status', e.target.value)} disabled={isReadOnly}>
                     <option value="">Select a status</option>
                     {FINAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -886,13 +895,13 @@ export default function MaintenanceTicketPage() {
 
               <div>
                 <label className="form-label">Start Date</label>
-                <input type="datetime-local" className="form-input" value={repForm.start_date ? (repForm.start_date as string).slice(0, 16) : ''} onChange={e => setRep('start_date', e.target.value)} />
+                <input type="datetime-local" className="form-input" value={repForm.start_date ? (repForm.start_date as string).slice(0, 16) : ''} onChange={e => setRep('start_date', e.target.value)} disabled={isReadOnly} />
               </div>
 
               <div>
                 <label className="form-label form-label-required">Work Order Type</label>
                 <div className="relative">
-                  <select className="form-select" value={repForm.Work_Order_Type as string} onChange={e => setRep('Work_Order_Type', e.target.value)}>
+                  <select className="form-select" value={repForm.Work_Order_Type as string} onChange={e => setRep('Work_Order_Type', e.target.value)} disabled={isReadOnly}>
                     <option value="">Select Work Order Type</option>
                     {['AFE - Workover', 'AFE - Capital', 'LOE'].map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -912,6 +921,7 @@ export default function MaintenanceTicketPage() {
                         value={p}
                         checked={repForm.Priority_of_Issue === p}
                         onChange={() => setRep('Priority_of_Issue', p)}
+                        disabled={isReadOnly}
                         className="w-4 h-4 accent-[#1B2E6B]"
                       />
                       <span className="text-sm text-gray-700">{p}</span>
@@ -922,15 +932,15 @@ export default function MaintenanceTicketPage() {
 
               <div>
                 <label className="form-label form-label-required">Repair Details</label>
-                <textarea className="form-textarea" placeholder="Enter details" value={repForm.repair_details as string} onChange={e => setRep('repair_details', e.target.value)} />
+                <textarea className="form-textarea" placeholder="Enter details" value={repForm.repair_details as string} onChange={e => setRep('repair_details', e.target.value)} disabled={isReadOnly} />
               </div>
 
               {/* Repair Images */}
               <div>
                 <label className="form-label">Repair Images</label>
                 <div
-                  className={`form-input flex items-center justify-between cursor-pointer ${uploadingRepairPhotos ? 'opacity-50 pointer-events-none' : ''}`}
-                  onClick={() => document.getElementById('repair-photo-input')?.click()}
+                  className={`form-input flex items-center justify-between ${isReadOnly ? 'opacity-50 cursor-not-allowed pointer-events-none' : `cursor-pointer ${uploadingRepairPhotos ? 'opacity-50 pointer-events-none' : ''}`}`}
+                  onClick={() => !isReadOnly && document.getElementById('repair-photo-input')?.click()}
                 >
                   <span className="text-gray-400">{uploadingRepairPhotos ? 'Uploading…' : 'Attach an image'}</span>
                   <Camera size={20} className="text-gray-400" />
@@ -975,7 +985,8 @@ export default function MaintenanceTicketPage() {
                         />
                         <button
                           type="button"
-                          onClick={() => setDeleteRepairPhotoIdx(i)}
+                          onClick={() => !isReadOnly && setDeleteRepairPhotoIdx(i)}
+                          disabled={isReadOnly}
                           className="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
                         >
                           <X size={12} />
@@ -997,6 +1008,7 @@ export default function MaintenanceTicketPage() {
                       <select
                         className="form-select text-sm"
                         value={row.vendor}
+                        disabled={isReadOnly}
                         onChange={e => {
                           const rows = [...vendorRows]
                           rows[i] = { ...rows[i], vendor: e.target.value }
@@ -1022,6 +1034,7 @@ export default function MaintenanceTicketPage() {
                         className="form-input pl-7 text-sm"
                         placeholder="Enter Value"
                         value={row.cost}
+                        disabled={isReadOnly}
                         onChange={e => {
                           const val = e.target.value
                           if (val === '' || /^\d*\.?\d*$/.test(val)) {
@@ -1037,7 +1050,7 @@ export default function MaintenanceTicketPage() {
               ))}
 
               {/* Add / Delete Vendor */}
-              {vendorRows.length < 7 && (
+              {!isReadOnly && vendorRows.length < 7 && (
                 <button
                   className="btn-green"
                   onClick={() => setVendorRows([...vendorRows, { vendor: '', cost: '' }])}
@@ -1045,7 +1058,7 @@ export default function MaintenanceTicketPage() {
                   Add Vendor
                 </button>
               )}
-              {vendorRows.length > 1 && (
+              {!isReadOnly && vendorRows.length > 1 && (
                 <button
                   className="btn-red"
                   onClick={() => setVendorRows(vendorRows.slice(0, -1))}
@@ -1056,19 +1069,21 @@ export default function MaintenanceTicketPage() {
 
               <div>
                 <label className="form-label">Date Completed</label>
-                <input type="datetime-local" className="form-input" value={repForm.date_completed ? (repForm.date_completed as string).slice(0, 16) : ''} onChange={e => setRep('date_completed', e.target.value)} />
+                <input type="datetime-local" className="form-input" value={repForm.date_completed ? (repForm.date_completed as string).slice(0, 16) : ''} onChange={e => setRep('date_completed', e.target.value)} disabled={isReadOnly} />
               </div>
 
-              <p className="text-sm text-gray-500">Submit the changes above to notify the original sender.</p>
-              <button className="btn-submit" onClick={saveRepairs} disabled={
-                saving ||
-                !repForm.Work_Order_Type ||
-                !repForm.final_status ||
-                !String(repForm.repair_details || '').trim() ||
-                (vendorRows.every(r => !r.cost) && repForm.final_status !== 'Repaired - Awaiting Final Cost')
-              }>
-                {saving ? 'Submitting…' : 'Submit'}
-              </button>
+              {!isReadOnly && <p className="text-sm text-gray-500">Submit the changes above to notify the original sender.</p>}
+              {!isReadOnly && (
+                <button className="btn-submit" onClick={saveRepairs} disabled={
+                  saving ||
+                  !repForm.Work_Order_Type ||
+                  !repForm.final_status ||
+                  !String(repForm.repair_details || '').trim() ||
+                  (vendorRows.every(r => !r.cost) && repForm.final_status !== 'Repaired - Awaiting Final Cost')
+                }>
+                  {saving ? 'Submitting…' : 'Submit'}
+                </button>
+              )}
             </div>
 
             <CommentsSection

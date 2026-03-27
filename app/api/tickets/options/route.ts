@@ -6,6 +6,8 @@ export async function GET(req: NextRequest) {
   const mode = searchParams.get('mode') || 'all'
   const userEmail = searchParams.get('userEmail') || ''
   const userName = searchParams.get('userName') || ''
+  const userAssetsParam = searchParams.get('userAssets') || ''
+  const userAssets = userAssetsParam ? userAssetsParam.split(',').map(a => a.trim()).filter(Boolean) : []
 
   try {
     const db = supabaseAdmin()
@@ -20,6 +22,8 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    if (userAssets.length > 0) query = query.in('Asset', userAssets)
+
     const { data, error } = await query
 
     if (error) throw error
@@ -28,7 +32,7 @@ export async function GET(req: NextRequest) {
     const unique = <T>(arr: T[]) => [...new Set(arr.filter(Boolean))].sort() as T[]
 
     return NextResponse.json({
-      assets:      unique(rows.map(r => r.Asset)),
+      assets:      userAssets.length > 0 ? userAssets.sort() : unique(rows.map(r => r.Asset)),
       departments: unique(rows.map(r => r.Department)),
       equipments:  unique(rows.map(r => r.Equipment)),
       foremans:    unique(rows.map(r => r.assigned_foreman)),

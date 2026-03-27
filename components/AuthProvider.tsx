@@ -8,6 +8,8 @@ interface AuthContextType {
   session: Session | null
   userEmail: string
   userName: string
+  role: string
+  assets: string[]
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -17,6 +19,8 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   userEmail: '',
   userName: '',
+  role: 'field_user',
+  assets: [],
   loading: true,
   signOut: async () => {},
 })
@@ -24,34 +28,56 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
+  const [role, setRole] = useState<string>('field_user')
+  const [assets, setAssets] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createSupabaseBrowserClient()
 
+  async function loadEmployeeProfile(email: string) {
+    const { data } = await supabase
+      .from('employees')
+      .select('role, assets')
+      .ilike('work_email', email)
+      .single()
+    if (data) {
+      setRole(data.role || 'field_user')
+      setAssets(data.assets || [])
+    }
+  }
+
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
-      setLoading(false)
+      if (session?.user?.email) {
+        loadEmployeeProfile(session.user.email).finally(() => setLoading(false))
+      } else {
+        setLoading(false)
+      }
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
-        setLoading(false)
+        if (session?.user?.email) {
+          loadEmployeeProfile(session.user.email).finally(() => setLoading(false))
+        } else {
+          setRole('field_user')
+          setAssets([])
+          setLoading(false)
+        }
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [supabase.auth])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
-  // Derive display name from user metadata or email
   const userEmail = user?.email ?? ''
   const userName =
     user?.user_metadata?.full_name ||
@@ -60,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ''
 
   return (
-    <AuthContext.Provider value={{ user, session, userEmail, userName, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, userEmail, userName, role, assets, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   )

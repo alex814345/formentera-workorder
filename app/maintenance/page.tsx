@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, Search, Calendar, Wrench, SlidersHorizontal } from 'lucide-react'
 import TicketCard from '@/components/ui/TicketCard'
 import BottomNav from '@/components/layout/BottomNav'
+import { useAuth } from '@/components/AuthProvider'
 import { TICKET_STATUSES, STATUS_EMOJI } from '@/lib/utils'
 import type { TicketStatus } from '@/types'
 
@@ -11,6 +12,7 @@ const PAGE_SIZE = 20
 
 export default function MaintenancePage() {
   const router = useRouter()
+  const { assets: userAssets } = useAuth()
   const [tickets, setTickets] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -36,7 +38,9 @@ export default function MaintenancePage() {
   const [submitters, setSubmitters] = useState<string[]>([])
 
   useEffect(() => {
-    fetch('/api/tickets/options?mode=all')
+    const params = new URLSearchParams({ mode: 'all' })
+    if (userAssets.length > 0) params.set('userAssets', userAssets.join(','))
+    fetch(`/api/tickets/options?${params}`)
       .then(r => r.json())
       .then(json => {
         setAssets(json.assets || [])
@@ -45,7 +49,7 @@ export default function MaintenancePage() {
         setForemans(json.foremans || [])
         setSubmitters(json.submitters || [])
       })
-  }, [])
+  }, [userAssets])
 
   const fetchTickets = useCallback(async () => {
     setLoading(true)
@@ -60,6 +64,7 @@ export default function MaintenancePage() {
       page: String(page),
       pageSize: String(PAGE_SIZE),
     })
+    if (userAssets.length > 0) params.set('userAssets', userAssets.join(','))
     try {
       const res = await fetch(`/api/tickets?${params}`)
       const json = await res.json()
@@ -220,7 +225,9 @@ export default function MaintenancePage() {
                   </div>
                 </div>
 
-                <SearchableSelectFilter label="Asset" value={assetFilter} onChange={setAssetFilter} options={assets} />
+                {userAssets.length !== 1 && (
+                  <SearchableSelectFilter label="Asset" value={assetFilter} onChange={setAssetFilter} options={assets} />
+                )}
                 <SearchableSelectFilter label="Department" value={deptFilter} onChange={setDeptFilter} options={departments} />
                 <SearchableSelectFilter label="Equipment" value={equipFilter} onChange={setEquipFilter} options={equipments} />
                 <SearchableSelectFilter label="Assigned Foreman" value={foremanFilter} onChange={setForemanFilter} options={foremans} />

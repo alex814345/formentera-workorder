@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
   const foreman = searchParams.get('foreman') || ''
   const submittedBy = searchParams.get('submittedBy') || ''
   const finalCostPending = searchParams.get('finalCostPending') === 'true'
+  const userAssetsParam = searchParams.get('userAssets') || ''
+  const userAssets = userAssetsParam ? userAssetsParam.split(',').map(a => a.trim()).filter(Boolean) : []
   const page = parseInt(searchParams.get('page') || '0')
   const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
@@ -41,6 +43,9 @@ export async function GET(req: NextRequest) {
         `Created_by_Email.ilike.${userEmail},Created_by_Name.ilike.${userName},assigned_foreman.ilike.${userName}`
       )
     }
+
+    // Restrict to user's assets unless admin (empty userAssets = sees all)
+    if (userAssets.length > 0) query = query.in('Asset', userAssets)
 
     // Filters
     if (ticketId) query = query.eq('id', parseInt(ticketId))

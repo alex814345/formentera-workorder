@@ -12,7 +12,7 @@ const PAGE_SIZE = 20
 
 export default function MyTicketsPage() {
   const router = useRouter()
-  const { userEmail, userName } = useAuth()
+  const { userEmail, userName, assets: userAssets } = useAuth()
   const [tickets, setTickets] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -34,14 +34,20 @@ export default function MyTicketsPage() {
 
   useEffect(() => {
     if (!userEmail && !userName) return
-    fetch(`/api/tickets/options?mode=mine&userEmail=${encodeURIComponent(userEmail)}&userName=${encodeURIComponent(userName)}`)
+    const params = new URLSearchParams({
+      mode: 'mine',
+      userEmail,
+      userName,
+    })
+    if (userAssets.length > 0) params.set('userAssets', userAssets.join(','))
+    fetch(`/api/tickets/options?${params}`)
       .then(r => r.json())
       .then(json => {
         setAssets(json.assets || [])
         setDepartments(json.departments || [])
         setEquipments(json.equipments || [])
       })
-  }, [userEmail, userName])
+  }, [userEmail, userName, userAssets])
 
   const fetchTickets = useCallback(async () => {
     setLoading(true)
@@ -56,6 +62,7 @@ export default function MyTicketsPage() {
       page: String(page),
       pageSize: String(PAGE_SIZE),
     })
+    if (userAssets.length > 0) params.set('userAssets', userAssets.join(','))
     try {
       const res = await fetch(`/api/tickets?${params}`)
       const json = await res.json()
@@ -150,16 +157,18 @@ export default function MyTicketsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="form-label">Asset</label>
-                  <div className="relative">
-                    <select className="form-select" value={assetFilter} onChange={e => setAssetFilter(e.target.value)}>
-                      <option value="All">All</option>
-                      {assets.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                {userAssets.length !== 1 && (
+                  <div>
+                    <label className="form-label">Asset</label>
+                    <div className="relative">
+                      <select className="form-select" value={assetFilter} onChange={e => setAssetFilter(e.target.value)}>
+                        <option value="All">All</option>
+                        {assets.map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                      <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div>
                   <label className="form-label">Department</label>

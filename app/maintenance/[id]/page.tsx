@@ -1048,7 +1048,13 @@ export default function MaintenanceTicketPage() {
               </div>
 
               <p className="text-sm text-gray-500">Submit the changes above to notify the original sender.</p>
-              <button className="btn-submit" onClick={saveRepairs} disabled={saving}>
+              <button className="btn-submit" onClick={saveRepairs} disabled={
+                saving ||
+                !repForm.Work_Order_Type ||
+                !repForm.final_status ||
+                !String(repForm.repair_details || '').trim() ||
+                (vendorRows.every(r => !r.cost) && repForm.final_status !== 'Repaired - Awaiting Final Cost')
+              }>
                 {saving ? 'Submitting…' : 'Submit'}
               </button>
             </div>

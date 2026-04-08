@@ -93,7 +93,7 @@ export default function KPIDashboard() {
                 <Cell key={entry.name} fill={STATUS_COLORS[entry.name] ?? '#D1D5DB'} />
               ))}
             </Pie>
-            <Tooltip formatter={(v: number) => [v, '']} />
+            <Tooltip formatter={(v) => [v, '']} />
           </PieChart>
           <div className="flex-1 space-y-1.5">
             {pieData.map(({ name, value }) => (
@@ -136,7 +136,7 @@ export default function KPIDashboard() {
             />
             <Tooltip
               cursor={{ fill: '#F3F4F6' }}
-              formatter={(v: number) => [v, 'Tickets']}
+              formatter={(v) => [v, 'Tickets']}
             />
             <Bar dataKey="count" fill="#1B2E6B" radius={[4, 4, 0, 0]} />
           </BarChart>

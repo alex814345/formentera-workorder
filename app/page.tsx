@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Wrench } from 'lucide-react'
 import BottomNav from '@/components/layout/BottomNav'
 import KPIDashboard from '@/components/home/KPIDashboard'
@@ -15,13 +16,14 @@ export default function HomePage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pt-6 pb-4">
         {/* Logo Banner */}
-        <div className="w-full h-28 rounded-lg overflow-hidden mb-6 bg-gray-100 flex items-center justify-center">
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-10 h-10 bg-[#1B2E6B] flex items-center justify-center rounded">
-              <span className="text-white font-bold text-lg">F</span>
-            </div>
-            <span className="text-2xl font-bold tracking-widest text-[#1B2E6B]">FORMENTERA</span>
-          </div>
+        <div className="relative w-full h-28 rounded-lg overflow-hidden mb-6">
+          <Image
+            src="/Formentera Workorder Banner.webp"
+            alt="Formentera"
+            fill
+            className="object-cover"
+            priority
+          />
         </div>
 
         {/* Submit section */}

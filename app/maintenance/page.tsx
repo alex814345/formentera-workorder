@@ -1,4 +1,5 @@
 'use client'
+import { Suspense } from 'react'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronDown, ChevronUp, Search, Calendar, Wrench, SlidersHorizontal } from 'lucide-react'
@@ -10,7 +11,7 @@ import type { TicketStatus } from '@/types'
 
 const PAGE_SIZE = 20
 
-export default function MaintenancePage() {
+function MaintenancePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { assets: userAssets } = useAuth()
@@ -312,5 +313,13 @@ export default function MaintenancePage() {
 
       <BottomNav />
     </div>
+  )
+}
+
+export default function MaintenancePage() {
+  return (
+    <Suspense>
+      <MaintenancePageContent />
+    </Suspense>
   )
 }

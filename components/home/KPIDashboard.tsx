@@ -163,8 +163,12 @@ export default function KPIDashboard() {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">By Department</h3>
           <div className="space-y-2.5">
             {deptCounts.map(({ dept, count }) => (
-              <div key={dept} className="flex items-center gap-2">
-                <span className="text-xs text-gray-600 w-28 truncate shrink-0">{dept}</span>
+              <div
+                key={dept}
+                className="flex items-center gap-2 cursor-pointer hover:bg-blue-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
+                onClick={() => router.push(`/maintenance?department=${encodeURIComponent(dept)}`)}
+              >
+                <span title={dept} className="text-xs text-gray-600 w-28 truncate shrink-0">{dept}</span>
                 <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#1B2E6B] rounded-full transition-all"

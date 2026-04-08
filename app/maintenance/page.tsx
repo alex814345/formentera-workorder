@@ -17,7 +17,7 @@ function MaintenancePageContent() {
   const { assets: userAssets } = useAuth()
   const [tickets, setTickets] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
-  const [filtersOpen, setFiltersOpen] = useState(() => !!(searchParams.get('equipment') || searchParams.get('startDate') || searchParams.get('status')))
+  const [filtersOpen, setFiltersOpen] = useState(() => !!(searchParams.get('equipment') || searchParams.get('startDate') || searchParams.get('status') || searchParams.get('department')))
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
 
@@ -26,7 +26,7 @@ function MaintenancePageContent() {
   const [startDate, setStartDate] = useState(() => searchParams.get('startDate') || '')
   const [endDate, setEndDate] = useState(() => searchParams.get('endDate') || '')
   const [assetFilter, setAssetFilter] = useState('All')
-  const [deptFilter, setDeptFilter] = useState('All')
+  const [deptFilter, setDeptFilter] = useState(() => searchParams.get('department') || 'All')
   const [equipFilter, setEquipFilter] = useState(() => searchParams.get('equipment') || 'All')
   const [foremanFilter, setForemanFilter] = useState('All')
   const [submittedByFilter, setSubmittedByFilter] = useState('All')

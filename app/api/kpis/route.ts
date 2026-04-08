@@ -12,16 +12,23 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = supabaseAdmin()
-    let query = db
-      .from('Maintenance_Form_Submission')
-      .select('Ticket_Status, Department, Issue_Date, Equipment')
 
-    if (userAssets.length > 0) query = query.in('Asset', userAssets)
-
-    const { data, error } = await query
-    if (error) throw error
-
-    const rows = data || []
+    // Paginate to get all rows (Supabase defaults to 1000 row limit)
+    const BATCH = 1000
+    const rows: { Ticket_Status: string; Department: string; Issue_Date: string; Equipment: string }[] = []
+    let from = 0
+    while (true) {
+      let q = db
+        .from('Maintenance_Form_Submission')
+        .select('Ticket_Status, Department, Issue_Date, Equipment')
+        .range(from, from + BATCH - 1)
+      if (userAssets.length > 0) q = q.in('Asset', userAssets)
+      const { data, error } = await q
+      if (error) throw error
+      rows.push(...(data || []))
+      if (!data || data.length < BATCH) break
+      from += BATCH
+    }
 
     // Status counts
     const statusCounts: Record<string, number> = {}

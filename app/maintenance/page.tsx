@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronDown, ChevronUp, Search, Calendar, Wrench, SlidersHorizontal } from 'lucide-react'
 import TicketCard from '@/components/ui/TicketCard'
 import BottomNav from '@/components/layout/BottomNav'
@@ -12,10 +12,11 @@ const PAGE_SIZE = 20
 
 export default function MaintenancePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { assets: userAssets } = useAuth()
   const [tickets, setTickets] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(() => !!searchParams.get('equipment'))
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
 
@@ -25,7 +26,7 @@ export default function MaintenancePage() {
   const [endDate, setEndDate] = useState('')
   const [assetFilter, setAssetFilter] = useState('All')
   const [deptFilter, setDeptFilter] = useState('All')
-  const [equipFilter, setEquipFilter] = useState('All')
+  const [equipFilter, setEquipFilter] = useState(() => searchParams.get('equipment') || 'All')
   const [foremanFilter, setForemanFilter] = useState('All')
   const [submittedByFilter, setSubmittedByFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>('All')

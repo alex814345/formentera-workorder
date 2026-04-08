@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -22,6 +23,7 @@ interface KPIData {
 
 export default function KPIDashboard() {
   const { assets } = useAuth()
+  const router = useRouter()
   const [data, setData] = useState<KPIData | null>(null)
 
   useEffect(() => {
@@ -73,8 +75,12 @@ export default function KPIDashboard() {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Most Reported Equipment</h3>
           <div className="space-y-2.5">
             {equipCounts.map(({ equip, count }) => (
-              <div key={equip} className="flex items-center gap-2">
-                <span className="text-xs text-gray-600 w-32 truncate shrink-0">{equip}</span>
+              <div
+                key={equip}
+                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors"
+                onClick={() => router.push(`/maintenance?equipment=${encodeURIComponent(equip)}`)}
+              >
+                <span title={equip} className="text-xs text-gray-600 w-32 truncate shrink-0">{equip}</span>
                 <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#1B2E6B] rounded-full transition-all"

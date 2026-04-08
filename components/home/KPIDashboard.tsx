@@ -116,7 +116,16 @@ export default function KPIDashboard() {
               cursor={{ fill: '#F3F4F6' }}
               formatter={(v) => [v, 'Tickets']}
             />
-            <Bar dataKey="count" fill="#1B2E6B" radius={[4, 4, 0, 0]} />
+            <Bar
+              dataKey="count"
+              fill="#1B2E6B"
+              radius={[4, 4, 0, 0]}
+              style={{ cursor: 'pointer' }}
+              onClick={(d: unknown) => {
+                const date = (d as { date?: string })?.date
+                if (date) router.push(`/maintenance?startDate=${date}&endDate=${date}`)
+              }}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

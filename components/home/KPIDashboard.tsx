@@ -6,12 +6,14 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts'
 
-const KPI_CARDS = [
+const KPI_GRID = [
   { key: 'Open',          label: 'Open',          bg: 'bg-blue-50',   text: 'text-[#1B2E6B]', dot: 'bg-[#1B2E6B]' },
   { key: 'In Progress',   label: 'In Progress',   bg: 'bg-amber-50',  text: 'text-amber-800', dot: 'bg-amber-400' },
+  { key: 'Backlogged',    label: 'Backlogged',    bg: 'bg-gray-100',  text: 'text-gray-700',  dot: 'bg-gray-400' },
   { key: 'Awaiting Cost', label: 'Awaiting Cost', bg: 'bg-orange-50', text: 'text-orange-800', dot: 'bg-orange-400' },
-  { key: 'Closed',        label: 'Closed',        bg: 'bg-green-50',  text: 'text-green-800', dot: 'bg-emerald-500' },
 ]
+
+const KPI_CLOSED = { key: 'Closed', label: 'Closed', bg: 'bg-green-50', text: 'text-green-800', dot: 'bg-emerald-500' }
 
 interface KPIData {
   statusCounts: Record<string, number>
@@ -44,6 +46,7 @@ export default function KPIDashboard() {
             <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
           ))}
         </div>
+        <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
         <div className="h-44 bg-gray-100 rounded-xl animate-pulse" />
         <div className="h-36 bg-gray-100 rounded-xl animate-pulse" />
         <div className="h-40 bg-gray-100 rounded-xl animate-pulse" />
@@ -55,12 +58,20 @@ export default function KPIDashboard() {
   const maxDept = deptCounts[0]?.count || 1
   const maxEquip = equipCounts[0]?.count || 1
 
+  function goToStatus(status: string) {
+    router.push(`/maintenance?status=${encodeURIComponent(status)}`)
+  }
+
   return (
     <div className="space-y-4 mt-6">
-      {/* KPI cards */}
+      {/* KPI cards — 2×2 grid */}
       <div className="grid grid-cols-2 gap-3">
-        {KPI_CARDS.map(({ key, label, bg, text, dot }) => (
-          <div key={key} className={`${bg} rounded-xl p-4`}>
+        {KPI_GRID.map(({ key, label, bg, text, dot }) => (
+          <div
+            key={key}
+            className={`${bg} rounded-xl p-4 cursor-pointer active:opacity-80`}
+            onClick={() => goToStatus(key)}
+          >
             <div className="flex items-center gap-1.5 mb-1">
               <div className={`w-2 h-2 rounded-full ${dot}`} />
               <span className={`text-xs font-medium ${text} opacity-70`}>{label}</span>
@@ -68,6 +79,21 @@ export default function KPIDashboard() {
             <span className={`text-3xl font-bold ${text}`}>{statusCounts[key] ?? 0}</span>
           </div>
         ))}
+      </div>
+
+      {/* Closed — full width */}
+      <div
+        className={`${KPI_CLOSED.bg} rounded-xl p-4 cursor-pointer active:opacity-80 flex items-center justify-between`}
+        onClick={() => goToStatus(KPI_CLOSED.key)}
+      >
+        <div>
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className={`w-2 h-2 rounded-full ${KPI_CLOSED.dot}`} />
+            <span className={`text-xs font-medium ${KPI_CLOSED.text} opacity-70`}>{KPI_CLOSED.label}</span>
+          </div>
+          <span className={`text-3xl font-bold ${KPI_CLOSED.text}`}>{statusCounts[KPI_CLOSED.key] ?? 0}</span>
+        </div>
+        <span className={`text-xs ${KPI_CLOSED.text} opacity-50`}>Tap to view →</span>
       </div>
 
       {/* Equipment breakdown */}

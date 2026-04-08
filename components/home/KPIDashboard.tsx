@@ -22,18 +22,19 @@ interface KPIData {
 }
 
 export default function KPIDashboard() {
-  const { assets } = useAuth()
+  const { assets, loading } = useAuth()
   const router = useRouter()
   const [data, setData] = useState<KPIData | null>(null)
 
   useEffect(() => {
+    if (loading) return
     const params = new URLSearchParams()
     if (assets.length > 0) params.set('userAssets', assets.join(','))
     fetch(`/api/kpis?${params}`)
       .then(r => r.json())
       .then(setData)
       .catch(() => {})
-  }, [assets])
+  }, [assets, loading])
 
   if (!data) {
     return (

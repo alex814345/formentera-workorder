@@ -69,7 +69,7 @@ export default function KPIDashboard() {
         {KPI_GRID.map(({ key, label, bg, text, dot }) => (
           <div
             key={key}
-            className={`${bg} rounded-xl p-4 cursor-pointer active:opacity-80`}
+            className={`${bg} rounded-xl p-4 cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] active:scale-100 active:opacity-80`}
             onClick={() => goToStatus(key)}
           >
             <div className="flex items-center gap-1.5 mb-1">
@@ -83,7 +83,7 @@ export default function KPIDashboard() {
 
       {/* Closed — full width */}
       <div
-        className={`${KPI_CLOSED.bg} rounded-xl p-4 cursor-pointer active:opacity-80 flex items-center justify-between`}
+        className={`${KPI_CLOSED.bg} rounded-xl p-4 cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] active:scale-100 active:opacity-80 flex items-center justify-between`}
         onClick={() => goToStatus(KPI_CLOSED.key)}
       >
         <div>
@@ -104,7 +104,7 @@ export default function KPIDashboard() {
             {equipCounts.map(({ equip, count }) => (
               <div
                 key={equip}
-                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors"
+                className="flex items-center gap-2 cursor-pointer hover:bg-blue-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
                 onClick={() => router.push(`/maintenance?equipment=${encodeURIComponent(equip)}`)}
               >
                 <span title={equip} className="text-xs text-gray-600 w-32 truncate shrink-0">{equip}</span>

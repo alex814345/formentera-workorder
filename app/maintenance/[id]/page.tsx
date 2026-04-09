@@ -875,7 +875,7 @@ export default function MaintenanceTicketPage() {
                   <button
                     className="btn-primary"
                     onClick={saveDispatch}
-                    disabled={saving || !dispForm.work_order_decision || dispForm.Estimate_Cost === ''}
+                    disabled={saving || !dispForm.work_order_decision || (dispForm.work_order_decision !== 'Backlog - Uneconomic / Awaiting Part' && dispForm.Estimate_Cost === '')}
                   >
                     {saving ? 'Dispatching…' : 'Dispatch'}
                   </button>

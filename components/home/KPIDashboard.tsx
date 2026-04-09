@@ -33,6 +33,7 @@ export default function KPIDashboard() {
     if (loading) return
     const params = new URLSearchParams()
     if (assets.length > 0) params.set('userAssets', assets.join(','))
+    params.set('_t', Date.now().toString())
     fetch(`/api/kpis?${params}`, { cache: 'no-store' })
       .then(r => r.json())
       .then(setData)

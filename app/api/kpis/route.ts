@@ -79,6 +79,11 @@ export async function GET(req: NextRequest) {
       equipCounts,
       dailyTrend: trend,
       total: rows.length,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     })
   } catch (err) {
     console.error('KPIs fetch error:', err)

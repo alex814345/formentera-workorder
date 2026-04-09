@@ -29,6 +29,7 @@ export default function KPIDashboard() {
   const router = useRouter()
 
   const [data, setData] = useState<KPIData | null>(null)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
 
   const fetchKPIs = useCallback(() => {
     if (loading) return
@@ -37,7 +38,7 @@ export default function KPIDashboard() {
     params.set('_t', Date.now().toString())
     fetch(`/api/kpis?${params}`, { cache: 'no-store' })
       .then(r => r.json())
-      .then(setData)
+      .then(d => { setData(d); setLastRefreshed(new Date()) })
       .catch(() => {})
   }, [assets, loading])
 
@@ -93,6 +94,19 @@ export default function KPIDashboard() {
 
   return (
     <div className="space-y-4 mt-6">
+      {/* Refresh row */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-gray-400">
+          {lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : 'Loading…'}
+        </span>
+        <button
+          onClick={fetchKPIs}
+          className="text-xs text-[#1B2E6B] font-medium px-2 py-1 rounded-md hover:bg-blue-50 transition-colors"
+        >
+          ↻ Refresh
+        </button>
+      </div>
+
       {/* KPI cards — 2×2 grid */}
       <div className="grid grid-cols-2 gap-3">
         {KPI_GRID.map(({ key, label, bg, text, dot }) => (

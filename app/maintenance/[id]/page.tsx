@@ -280,6 +280,11 @@ export default function MaintenanceTicketPage() {
           const status = (ticket.Ticket_Status as string ?? '').toLowerCase()
           const eligibleStatus = ['in progress', 'closed', 'backlogged', 'awaiting cost'].includes(status)
           const hasEstCost = (ticket.Estimate_Cost != null && ticket.Estimate_Cost !== '') || (dispatch.Estimate_Cost != null && dispatch.Estimate_Cost !== '')
+          if (status === 'open') return (
+            <p className="text-xs text-blue-600 mt-2">
+              Ticket must be dispatched before it can progress to Repairs / Closeout.
+            </p>
+          )
           if (eligibleStatus && !hasEstCost) return (
             <p className="text-xs text-amber-600 mt-2">
               Add an Estimated Cost in the Dispatch tab to unlock the Repairs / Closeout tab.

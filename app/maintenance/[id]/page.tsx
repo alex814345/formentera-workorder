@@ -67,7 +67,7 @@ export default function MaintenanceTicketPage() {
     setDispForm({
       work_order_decision: d.work_order_decision || '',
       Estimate_Cost: t.Estimate_Cost != null ? String(t.Estimate_Cost) : (d.Estimate_Cost != null ? String(d.Estimate_Cost) : ''),
-      assigned_foreman: d.maintenance_foreman || '',
+      assigned_foreman: d.maintenance_foreman || t.assigned_foreman || '',
       additional_assignee: d.production_foreman || '',
       date_assigned: d.date_assigned || new Date().toISOString(),
     })
@@ -194,7 +194,8 @@ export default function MaintenanceTicketPage() {
           ticket_id: id,
           work_order_decision: dispForm.work_order_decision,
           Estimate_Cost: dispForm.Estimate_Cost,
-          production_foreman: dispForm.assigned_foreman,
+          maintenance_foreman: dispForm.assigned_foreman,
+          production_foreman: dispForm.additional_assignee || null,
           date_assigned: dispForm.date_assigned,
           current_user_email: userEmail,
         }),

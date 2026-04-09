@@ -44,6 +44,12 @@ export default function KPIDashboard() {
     fetchKPIs()
   }, [fetchKPIs])
 
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchKPIs() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [fetchKPIs])
+
   if (!data) {
     return (
       <div className="space-y-4 mt-6">

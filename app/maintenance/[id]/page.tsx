@@ -248,7 +248,7 @@ export default function MaintenanceTicketPage() {
         }),
       })
       await refreshData()
-      alert('Repairs saved. Original sender notified.')
+      router.push('/maintenance')
     } finally { setSaving(false) }
   }
 

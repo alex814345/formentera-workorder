@@ -256,7 +256,17 @@ export default function MaintenanceTicketPage() {
           production_foreman: dispatch.production_foreman || null,
         }),
       })
-      toast.success('Repairs / Closeout saved.', { duration: 5000 })
+      const hdr = ((data?.ticket as Record<string, unknown>)?.Well || (data?.ticket as Record<string, unknown>)?.Facility || `Ticket #${id}`) as string
+      const CLOSED_STATUSES = new Set(['Repaired - Returned to Service', 'No Action - Returned to Service', 'Decommissioned / Retired'])
+      if (effectiveFinalStatus === 'Repaired - Awaiting Final Cost') {
+        toast.info(`${hdr} - Awaiting Cost`, { duration: 5000 })
+      } else if (CLOSED_STATUSES.has(effectiveFinalStatus)) {
+        toast.success(`${hdr} is Closed`, { duration: 5000 })
+      } else if (effectiveFinalStatus.toLowerCase().startsWith('backlog')) {
+        toast.warning(`${hdr} is Backlogged`, { duration: 5000 })
+      } else {
+        toast.success(`${hdr} - Updated`, { duration: 5000 })
+      }
       router.push('/maintenance')
     } finally { setSaving(false) }
   }

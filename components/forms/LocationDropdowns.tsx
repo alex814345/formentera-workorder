@@ -13,11 +13,12 @@ interface LocationDropdownsProps {
     asset?: string; field?: string; well?: string; facility?: string;
   }
   userAssets?: string[]
+  disabled?: boolean
 }
 
 type WFData = Record<string, string[]>
 
-export default function LocationDropdowns({ locationType, onChange, initialValues, userAssets = [] }: LocationDropdownsProps) {
+export default function LocationDropdowns({ locationType, onChange, initialValues, userAssets = [], disabled = false }: LocationDropdownsProps) {
   const [wfData, setWfData] = useState<WFData>({})
   const [loading, setLoading] = useState(true)
 
@@ -130,7 +131,7 @@ export default function LocationDropdowns({ locationType, onChange, initialValue
           value={asset}
           options={assets}
           placeholder="Select an Asset"
-          disabled={singleAsset}
+          disabled={disabled || singleAsset}
           onChange={v => { setAsset(v); setField(''); setWell(''); setFacility(''); emit(v, '', '', '') }}
         />
       </div>
@@ -142,6 +143,7 @@ export default function LocationDropdowns({ locationType, onChange, initialValue
           value={field}
           options={fields}
           placeholder="Select a Field"
+          disabled={disabled}
           onChange={v => { setField(v); setWell(''); setFacility(''); emit(asset, v, '', '') }}
         />
       </div>
@@ -154,6 +156,7 @@ export default function LocationDropdowns({ locationType, onChange, initialValue
             value={well}
             options={wells}
             placeholder="Select a Well"
+            disabled={disabled}
             onChange={v => { setWell(v); setFacility(''); emit(asset, field, v, '') }}
           />
         </div>
@@ -167,6 +170,7 @@ export default function LocationDropdowns({ locationType, onChange, initialValue
             value={facility}
             options={facilities}
             placeholder="Select a Facility"
+            disabled={disabled}
             onChange={v => { setFacility(v); setWell(''); emit(asset, field, '', v) }}
           />
         </div>

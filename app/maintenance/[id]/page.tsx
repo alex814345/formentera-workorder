@@ -504,6 +504,7 @@ export default function MaintenanceTicketPage() {
                   well: irForm.Well as string,
                   facility: irForm.Facility as string,
                 }}
+                disabled={isReadOnly}
                 onChange={({ asset, field, well, facility, area, route }) => {
                   setIrForm(f => ({ ...f, Asset: asset, Field: field, Well: well, Facility: facility, Area: area, Route: route }))
                 }}

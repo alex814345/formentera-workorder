@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { ArrowLeft, ChevronDown, Camera, X } from 'lucide-react'
 import LocationDropdowns from '@/components/forms/LocationDropdowns'
 import SearchableSelect from '@/components/ui/SearchableSelect'
@@ -91,9 +92,10 @@ export default function MaintenanceFormPage() {
         }),
       })
       if (!res.ok) throw new Error('Submit failed')
+      toast.info('Maintenance Form Successfully Submitted', { duration: 5000 })
       router.push('/my-tickets')
     } catch {
-      alert('Failed to submit ticket. Please try again.')
+      toast.error('Failed to submit ticket. Please try again.')
     } finally {
       setSubmitting(false)
       submitLock.current = false

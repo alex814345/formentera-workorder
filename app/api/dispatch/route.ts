@@ -108,6 +108,16 @@ export async function PATCH(req: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // Sync Ticket_Status on the main ticket when dispatch decision changes
+    if (body.work_order_decision && body.ticket_id) {
+      const ticketStatus = deriveTicketStatus(body.work_order_decision)
+      await db
+        .from('Maintenance_Form_Submission')
+        .update({ Ticket_Status: ticketStatus })
+        .eq('id', body.ticket_id)
+    }
+
     return NextResponse.json(data)
   } catch (error) {
     console.error('Dispatch update error:', error)

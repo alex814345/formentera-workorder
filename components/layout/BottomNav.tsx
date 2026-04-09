@@ -6,6 +6,25 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/components/AuthProvider'
 import { useState } from 'react'
 
+const ROLE_PERMISSIONS: Record<string, { label: string; perms: string[] }> = {
+  field_user: {
+    label: 'Field User',
+    perms: ['Submit new tickets', 'View all tickets (read-only)'],
+  },
+  foreman: {
+    label: 'Foreman',
+    perms: ['Submit new tickets', 'Edit tickets in your asset', 'Dispatch and close tickets'],
+  },
+  admin: {
+    label: 'Admin',
+    perms: ['Full access to all tickets and settings'],
+  },
+  analyst: {
+    label: 'Analyst',
+    perms: ['View-only access', 'Access to Analytics dashboard'],
+  },
+}
+
 const NAV_ITEMS = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/my-tickets', label: 'My Tickets', icon: Ticket },
@@ -14,7 +33,7 @@ const NAV_ITEMS = [
 
 export default function BottomNav() {
   const pathname = usePathname()
-  const { userName, signOut } = useAuth()
+  const { userName, role, signOut } = useAuth()
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
@@ -39,6 +58,16 @@ export default function BottomNav() {
             <div className="px-4 py-3 border-b border-gray-100">
               <p className="text-xs text-gray-400">Signed in as</p>
               <p className="text-sm font-semibold text-gray-900 truncate">{userName}</p>
+              {ROLE_PERMISSIONS[role] && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-gray-500">{ROLE_PERMISSIONS[role].label}</p>
+                  <ul className="mt-1 space-y-0.5">
+                    {ROLE_PERMISSIONS[role].perms.map(p => (
+                      <li key={p} className="text-xs text-gray-400">• {p}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"

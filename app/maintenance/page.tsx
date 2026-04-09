@@ -31,8 +31,6 @@ function MaintenancePageContent() {
   const [foremanFilter, setForemanFilter] = useState('All')
   const [submittedByFilter, setSubmittedByFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>(() => (searchParams.get('status') as TicketStatus) || 'All')
-  const [finalCostPending, setFinalCostPending] = useState(false)
-
   const [assets, setAssets] = useState<string[]>([])
   const [departments, setDepartments] = useState<string[]>([])
   const [equipments, setEquipments] = useState<string[]>([])
@@ -63,7 +61,6 @@ function MaintenancePageContent() {
       asset: assetFilter, department: deptFilter,
       equipment: equipFilter, status: statusFilter,
       foreman: foremanFilter, submittedBy: submittedByFilter,
-      finalCostPending: String(finalCostPending),
       page: String(page),
       pageSize: String(PAGE_SIZE),
     })
@@ -79,15 +76,15 @@ function MaintenancePageContent() {
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [page, ticketId, search, startDate, endDate, assetFilter, deptFilter, equipFilter, statusFilter, foremanFilter, submittedByFilter, finalCostPending, userAssets])
+  }, [page, ticketId, search, startDate, endDate, assetFilter, deptFilter, equipFilter, statusFilter, foremanFilter, submittedByFilter, userAssets])
 
-  useEffect(() => { setPage(0) }, [ticketId, search, startDate, endDate, assetFilter, deptFilter, equipFilter, statusFilter, foremanFilter, submittedByFilter, finalCostPending])
+  useEffect(() => { setPage(0) }, [ticketId, search, startDate, endDate, assetFilter, deptFilter, equipFilter, statusFilter, foremanFilter, submittedByFilter])
 
   function resetFilters() {
     setTicketId(''); setSearch(''); setStartDate(''); setEndDate('')
     setAssetFilter('All'); setDeptFilter('All'); setEquipFilter('All')
     setForemanFilter('All'); setSubmittedByFilter('All')
-    setStatusFilter('All'); setFinalCostPending(false)
+    setStatusFilter('All')
     setPage(0)
   }
 

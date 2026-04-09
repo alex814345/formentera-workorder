@@ -282,7 +282,7 @@ export default function MaintenanceTicketPage() {
           const hasEstCost = (ticket.Estimate_Cost != null && ticket.Estimate_Cost !== '') || (dispatch.Estimate_Cost != null && dispatch.Estimate_Cost !== '')
           if (status === 'open') return (
             <p className="text-xs text-blue-600 mt-2">
-              Ticket must be dispatched before it can progress to Repairs / Closeout.
+              Ticket must be dispatched to view the Repairs / Closeout tab.
             </p>
           )
           if (eligibleStatus && !hasEstCost) return (

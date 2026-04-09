@@ -81,11 +81,18 @@ export async function POST(req: NextRequest) {
         .eq('id', repairData.id)
     }
 
-    // Update ticket status to Closed if final_status set
+    // Update ticket status based on final_status
     if (body.final_status) {
+      const BACKLOG_STATUSES = ['Backlog - Awaiting Parts', 'Backlog - Not Economical']
+      const ticketStatus = BACKLOG_STATUSES.includes(body.final_status)
+        ? 'Backlogged'
+        : body.final_status === 'Repaired - Awaiting Final Cost'
+        ? 'Awaiting Cost'
+        : 'Closed'
+
       await db
         .from('Maintenance_Form_Submission')
-        .update({ Ticket_Status: 'Closed' })
+        .update({ Ticket_Status: ticketStatus })
         .eq('id', body.ticket_id)
 
       // Mark closeout date

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { toast } from 'sonner'
 import { ArrowLeft, ChevronDown, Camera, X } from 'lucide-react'
 import Accordion from '@/components/ui/Accordion'
 import BottomNav from '@/components/layout/BottomNav'
@@ -200,6 +201,14 @@ export default function MaintenanceTicketPage() {
           current_user_email: userEmail,
         }),
       })
+      const decision = String(dispForm.work_order_decision || '')
+      const isBacklog = decision.toLowerCase().startsWith('backlog')
+      const hdr = ((data?.ticket as Record<string, unknown>)?.Well || (data?.ticket as Record<string, unknown>)?.Facility || `Ticket #${id}`) as string
+      if (isBacklog) {
+        toast.warning(`${hdr} is Backlogged • #${id} • ${decision}`, { duration: 5000 })
+      } else {
+        toast.success(`${hdr} - Dispatched`, { duration: 5000 })
+      }
       router.push('/maintenance')
     } finally { setSaving(false) }
   }

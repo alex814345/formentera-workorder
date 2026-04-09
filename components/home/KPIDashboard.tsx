@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -26,9 +26,10 @@ interface KPIData {
 export default function KPIDashboard() {
   const { assets, loading } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
   const [data, setData] = useState<KPIData | null>(null)
 
-  useEffect(() => {
+  const fetchKPIs = useCallback(() => {
     if (loading) return
     const params = new URLSearchParams()
     if (assets.length > 0) params.set('userAssets', assets.join(','))
@@ -37,6 +38,10 @@ export default function KPIDashboard() {
       .then(setData)
       .catch(() => {})
   }, [assets, loading])
+
+  useEffect(() => {
+    fetchKPIs()
+  }, [fetchKPIs, pathname])
 
   if (!data) {
     return (

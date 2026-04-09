@@ -94,18 +94,10 @@ export default function KPIDashboard() {
 
   return (
     <div className="space-y-4 mt-6">
-      {/* Refresh row */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400">
-          {lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : 'Loading…'}
-        </span>
-        <button
-          onClick={fetchKPIs}
-          className="text-xs text-[#1B2E6B] font-medium px-2 py-1 rounded-md hover:bg-blue-50 transition-colors"
-        >
-          ↻ Refresh
-        </button>
-      </div>
+      {/* Last updated */}
+      {lastRefreshed && (
+        <p className="text-xs text-gray-400">Updated {lastRefreshed.toLocaleTimeString()}</p>
+      )}
 
       {/* KPI cards — 2×2 grid */}
       <div className="grid grid-cols-2 gap-3">

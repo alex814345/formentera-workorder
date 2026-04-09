@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts'
@@ -48,6 +49,16 @@ export default function KPIDashboard() {
     const onVisible = () => { if (document.visibilityState === 'visible') fetchKPIs() }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [fetchKPIs])
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient()
+    const channel = supabase
+      .channel('kpi-refresh')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Maintenance_Form_Submission' }, fetchKPIs)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Repairs_Closeout' }, fetchKPIs)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [fetchKPIs])
 
   if (!data) {

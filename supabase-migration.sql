@@ -150,24 +150,48 @@ CREATE TABLE IF NOT EXISTS comments (
 -- workorder_ticket_summary (view — replaces CSV table)
 -- ============================================================
 CREATE OR REPLACE VIEW workorder_ticket_summary AS
+WITH latest_dispatch AS (
+  SELECT
+    d.*,
+    ROW_NUMBER() OVER (
+      PARTITION BY d.ticket_id
+      ORDER BY
+        (d."Estimate_Cost" IS NOT NULL) DESC,
+        d.date_assigned DESC NULLS LAST,
+        d.created_at DESC,
+        d.id DESC
+    ) AS rn
+  FROM "Dispatch" d
+),
+latest_closeout AS (
+  SELECT
+    rc.*,
+    ROW_NUMBER() OVER (
+      PARTITION BY rc.ticket_id
+      ORDER BY
+        COALESCE(rc.date_closed, rc.date_completed, rc.start_date, rc.created_at) DESC,
+        rc.id DESC
+    ) AS rn
+  FROM "Repairs_Closeout" rc
+)
 SELECT
-  m.id                          AS ticket_id,
-  m."Department"                AS department,
-  m."Issue_Date"                AS issue_date,
-  m."Work_Order_Type"           AS work_order_type,
-  m."Estimate_Cost"             AS "Estimate_Cost",
-  m."Priority_of_Issue"         AS priority_of_issue,
-  m."Issue_Description"         AS issue_description,
-  m."Location_Type"             AS location_type,
-  m."Equipment_Type"            AS equipment_type,
-  m."Equipment"                 AS equipment_name,
-  m."Asset"                     AS asset,
-  m."Area"                      AS area,
-  m."Field"                     AS field,
-  m."Route"                     AS route,
-  m."Well"                      AS well,
-  m."Facility"                  AS facility,
-  m."Ticket_Status"             AS ticket_status,
+  m.id                                       AS ticket_id,
+  m."Department"                             AS department,
+  m."Issue_Date"                             AS issue_date,
+  COALESCE(rc."Work_Order_Type", m."Work_Order_Type") AS work_order_type,
+  COALESCE(d."Estimate_Cost", m."Estimate_Cost") AS "Estimate_Cost",
+  COALESCE(rc."Priority_of_Issue", m."Priority_of_Issue") AS priority_of_issue,
+  m."Issue_Description"                      AS issue_description,
+  m."Location_Type"                          AS location_type,
+  m."Equipment_Type"                         AS equipment_type,
+  m."Equipment"                              AS equipment_name,
+  m."Asset"                                  AS asset,
+  m."Area"                                   AS area,
+  m."Field"                                  AS field,
+  m."Route"                                  AS route,
+  m."Well"                                   AS well,
+  m."Facility"                               AS facility,
+  m."Ticket_Status"                          AS ticket_status,
   d.work_order_decision,
   d.self_dispatch_assignee,
   d.production_foreman,
@@ -175,27 +199,23 @@ SELECT
   d.date_assigned,
   d.due_date,
   rc.final_status,
-  rc.start_date                 AS repair_start_date,
+  rc.start_date          AS repair_start_date,
   rc.repair_details,
-  rc.vendor                     AS repair_vendor,
+  rc.vendor              AS repair_vendor,
   rc.total_repair_cost,
-  rc.date_completed             AS repair_date_completed,
-  rc.date_closed                AS repair_date_closed,
+  rc.date_completed      AS repair_date_completed,
+  rc.date_closed         AS repair_date_closed,
   rc.closed_by,
-  m."Created_by_Name"           AS created_by
+  vpd.total_cost         AS repair_cost,
+  m."Created_by_Name"                        AS created_by
 FROM "Maintenance_Form_Submission" m
-LEFT JOIN LATERAL (
-  SELECT * FROM "Dispatch" d
-  WHERE d.ticket_id = m.id
-  ORDER BY d.date_assigned DESC NULLS LAST, d.id DESC
-  LIMIT 1
-) d ON TRUE
-LEFT JOIN LATERAL (
-  SELECT * FROM "Repairs_Closeout" rc
-  WHERE rc.ticket_id = m.id
-  ORDER BY rc.created_at DESC NULLS LAST, rc.id DESC
-  LIMIT 1
-) rc ON TRUE;
+LEFT JOIN latest_dispatch d
+  ON d.ticket_id = m.id AND d.rn = 1
+LEFT JOIN latest_closeout rc
+  ON rc.ticket_id = m.id AND rc.rn = 1
+LEFT JOIN vendor_payment_details vpd
+  ON vpd.ticket_id = m.id
+ORDER BY m.id;
 
 -- ============================================================
 -- Indexes for performance

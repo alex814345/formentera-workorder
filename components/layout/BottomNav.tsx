@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Ticket, Wrench, LogOut } from 'lucide-react'
+import { Home, Ticket, Wrench, LogOut, BarChart2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/components/AuthProvider'
 import { useState } from 'react'
@@ -25,15 +25,18 @@ const ROLE_PERMISSIONS: Record<string, { label: string; perms: string[] }> = {
   },
 }
 
-const NAV_ITEMS = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/my-tickets', label: 'My Tickets', icon: Ticket },
-  { href: '/maintenance', label: 'Maintenance', icon: Wrench },
+const BASE_NAV_ITEMS = [
+  { href: '/', label: 'Home', icon: Home, roles: null },
+  { href: '/my-tickets', label: 'My Tickets', icon: Ticket, roles: ['field_user', 'foreman', 'admin'] },
+  { href: '/maintenance', label: 'Maintenance', icon: Wrench, roles: null },
+  { href: '/analysis', label: 'Analysis', icon: BarChart2, roles: ['analyst', 'admin'] },
 ]
 
 export default function BottomNav() {
   const pathname = usePathname()
   const { userName, role, signOut } = useAuth()
+
+  const NAV_ITEMS = BASE_NAV_ITEMS.filter(item => !item.roles || item.roles.includes(role))
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
 

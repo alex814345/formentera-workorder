@@ -158,6 +158,7 @@ export default function KPIDashboard() {
               fill="#1B2E6B"
               radius={[4, 4, 0, 0]}
               style={{ cursor: 'pointer' }}
+              activeBar={{ fill: '#2B3E8B', stroke: 'none' }}
               onClick={(d: unknown) => {
                 const date = (d as { date?: string })?.date
                 if (date) router.push(`/maintenance?startDate=${date}&endDate=${date}`)

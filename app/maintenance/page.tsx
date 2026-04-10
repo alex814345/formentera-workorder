@@ -14,7 +14,7 @@ const PAGE_SIZE = 20
 function MaintenancePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { assets: userAssets } = useAuth()
+  const { assets: userAssets, role } = useAuth()
   const [tickets, setTickets] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
   const [filtersOpen, setFiltersOpen] = useState(() => !!(searchParams.get('equipment') || searchParams.get('startDate') || searchParams.get('status') || searchParams.get('department')))
@@ -165,9 +165,11 @@ function MaintenancePageContent() {
 
       {/* Action bar + filter trigger — outside scroll so dropdown isn't clipped */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100 relative z-20">
-        <button className="btn-primary mb-3" onClick={() => router.push('/maintenance/new')}>
-          <Wrench size={18} /> Maintenance Ticket
-        </button>
+        {role !== 'analyst' && (
+          <button className="btn-primary mb-3" onClick={() => router.push('/maintenance/new')}>
+            <Wrench size={18} /> Maintenance Ticket
+          </button>
+        )}
 
         {/* Filter trigger */}
         <button

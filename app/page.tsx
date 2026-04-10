@@ -1,10 +1,15 @@
+'use client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Wrench } from 'lucide-react'
 import BottomNav from '@/components/layout/BottomNav'
 import KPIDashboard from '@/components/home/KPIDashboard'
+import { useAuth } from '@/components/AuthProvider'
 
 export default function HomePage() {
+  const { role } = useAuth()
+  const isAnalyst = role === 'analyst'
+
   return (
     <div className="flex flex-col min-h-screen pb-16">
       {/* Header */}
@@ -26,12 +31,16 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Submit section */}
-        <h2 className="text-lg font-bold text-gray-900 text-center mb-4">Submit a Ticket</h2>
-        <Link href="/maintenance/new" className="btn-primary">
-          <Wrench size={18} />
-          Maintenance Ticket
-        </Link>
+        {/* Submit section — hidden for analysts */}
+        {!isAnalyst && (
+          <>
+            <h2 className="text-lg font-bold text-gray-900 text-center mb-4">Submit a Ticket</h2>
+            <Link href="/maintenance/new" className="btn-primary">
+              <Wrench size={18} />
+              Maintenance Ticket
+            </Link>
+          </>
+        )}
 
         {/* KPI Dashboard */}
         <KPIDashboard />

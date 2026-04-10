@@ -146,6 +146,7 @@ export default function MaintenanceTicketPage() {
   const ticketAsset = ticket.Asset as string
   const isInMyAsset = userAssets.length === 0 || userAssets.includes(ticketAsset)
   const isReadOnly =
+    role === 'analyst' ? true :
     role === 'admin' ? false :
     role === 'foreman' ? !isInMyAsset :
     !isSelfDispatchedByMe // field_user default

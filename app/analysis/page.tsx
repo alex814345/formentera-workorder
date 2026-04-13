@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { Search, ChevronDown, ChevronUp, X, BarChart2, Table2, List, Download, ChevronRight, MessageSquare, Send } from 'lucide-react'
@@ -115,6 +115,7 @@ export default function AnalysisPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
 
   // Date range filter
   const [datePreset, setDatePreset] = useState<'all' | 'week' | 'month' | 'lastmonth' | 'ytd' | 'custom'>('all')
@@ -202,6 +203,11 @@ export default function AnalysisPage() {
       .finally(() => setTableLoading(false))
   }, [tab, tablePage, debouncedSearch, statusFilter, tableDeptFilter, workTypeFilter, assets, loading, effectiveStart, effectiveEnd])
 
+  // Auto-scroll chat to latest message
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages, chatLoading])
+
   // Pivot fieldEquipChart for stacked bar chart
   const { equipBreakdownData, topEquipTypes } = useMemo(() => {
     if (!aggData) return { equipBreakdownData: [], topEquipTypes: [] as string[] }
@@ -231,23 +237,37 @@ export default function AnalysisPage() {
     return { equipBreakdownData: data, topEquipTypes: topEquip }
   }, [aggData, deptFilter])
 
-  async function sendChat() {
-    if (!chatInput.trim() || chatLoading || !aggData) return
-    const question = chatInput.trim()
+  async function sendChat(overrideQuestion?: string) {
+    const question = (overrideQuestion || chatInput).trim()
+    if (!question || chatLoading) return
     setChatInput('')
-    setChatMessages(prev => [...prev, { role: 'user', text: question }])
+    const updatedMessages = [...chatMessages, { role: 'user' as const, text: question }]
+    setChatMessages(updatedMessages)
     setChatLoading(true)
     try {
+      // Send text-only history for multi-turn context
+      const history = updatedMessages.map(m => ({
+        role: m.role,
+        text: m.text || (m.chart ? `[Chart: ${m.chart.title}]${m.chart.insight ? ' ' + m.chart.insight : ''}` : ''),
+      }))
       const res = await fetch('/api/analysis/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, aggData }),
+        body: JSON.stringify({
+          question,
+          messages: history.slice(0, -1), // previous messages (current question sent separately)
+          userAssets: assets,
+          startDate: effectiveStart,
+          endDate: effectiveEnd,
+        }),
       })
       const json = await res.json()
       if (json.type === 'chart') {
         setChatMessages(prev => [...prev, { role: 'assistant', chart: json as ChartSpec }])
       } else if (json.type === 'text') {
         setChatMessages(prev => [...prev, { role: 'assistant', text: json.text }])
+      } else if (json.error) {
+        setChatMessages(prev => [...prev, { role: 'assistant', text: json.error, error: true }])
       } else {
         setChatMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I could not process that.', error: true }])
       }
@@ -1014,7 +1034,7 @@ export default function AnalysisPage() {
                       <button
                         key={q}
                         className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-[#1B2E6B] transition-colors"
-                        onClick={() => { setChatInput(q) }}
+                        onClick={() => sendChat(q)}
                       >
                         {q}
                       </button>
@@ -1089,6 +1109,7 @@ export default function AnalysisPage() {
                   </div>
                 </div>
               )}
+              <div ref={chatEndRef} />
             </div>
 
             {/* Input bar */}
@@ -1105,7 +1126,7 @@ export default function AnalysisPage() {
                 />
                 <button
                   className="w-9 h-9 rounded-full bg-[#1B2E6B] flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
-                  onClick={sendChat}
+                  onClick={() => sendChat()}
                   disabled={chatLoading || !chatInput.trim()}
                 >
                   <Send size={15} className="text-white" />

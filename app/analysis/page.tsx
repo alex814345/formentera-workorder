@@ -662,7 +662,7 @@ export default function AnalysisPage() {
                       <span className={`text-xs px-2 py-0.5 rounded-full ${c.bg} ${c.text} font-medium`}>{totalCount}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      {totalEst > 0 && <span className="text-xs text-gray-500">{fmt(totalEst)}</span>}
+                      {totalEst > 0 && <span className="text-xs text-gray-500">Est. {fmt(totalEst)}</span>}
                       {isOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
                     </div>
                   </button>

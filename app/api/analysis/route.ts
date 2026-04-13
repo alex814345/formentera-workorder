@@ -258,7 +258,7 @@ export async function GET(req: NextRequest) {
     // 8. Aged tickets — top 10 oldest unresolved
     const OPEN_STATUSES = ['Open', 'In Progress', 'Backlogged', 'Awaiting Cost']
     const agedTickets = rows
-      .filter(r => OPEN_STATUSES.includes(r.ticket_status))
+      .filter(r => OPEN_STATUSES.includes(r.ticket_status) && r.ticket_id > 700)
       .map(r => ({
         ticket_id: r.ticket_id,
         field: r.field || '',

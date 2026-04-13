@@ -86,6 +86,7 @@ export default function AnalysisPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [tableDeptFilter, setTableDeptFilter] = useState('All')
+  const [workTypeFilter, setWorkTypeFilter] = useState('')
   const [tableLoading, setTableLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -145,7 +146,7 @@ export default function AnalysisPage() {
   useEffect(() => {
     setTablePage(0)
     setTableRows([])
-  }, [debouncedSearch, statusFilter, tableDeptFilter, effectiveStart, effectiveEnd])
+  }, [debouncedSearch, statusFilter, tableDeptFilter, workTypeFilter, effectiveStart, effectiveEnd])
 
   // Fetch ticket table
   useEffect(() => {
@@ -155,6 +156,7 @@ export default function AnalysisPage() {
     if (debouncedSearch) params.set('search', debouncedSearch)
     if (statusFilter !== 'All') params.set('status', statusFilter)
     if (tableDeptFilter !== 'All') params.set('department', tableDeptFilter)
+    if (workTypeFilter) params.set('workType', workTypeFilter)
     if (effectiveStart) params.set('startDate', effectiveStart)
     if (effectiveEnd) params.set('endDate', effectiveEnd)
     setTableLoading(true)
@@ -166,7 +168,7 @@ export default function AnalysisPage() {
       })
       .catch(() => {})
       .finally(() => setTableLoading(false))
-  }, [tab, tablePage, debouncedSearch, statusFilter, tableDeptFilter, assets, loading, effectiveStart, effectiveEnd])
+  }, [tab, tablePage, debouncedSearch, statusFilter, tableDeptFilter, workTypeFilter, assets, loading, effectiveStart, effectiveEnd])
 
   // Pivot fieldEquipChart for stacked bar chart
   const { equipBreakdownData, topEquipTypes } = useMemo(() => {
@@ -232,6 +234,7 @@ export default function AnalysisPage() {
     if (debouncedSearch) params.set('search', debouncedSearch)
     if (statusFilter !== 'All') params.set('status', statusFilter)
     if (tableDeptFilter !== 'All') params.set('department', tableDeptFilter)
+    if (workTypeFilter) params.set('workType', workTypeFilter)
     if (effectiveStart) params.set('startDate', effectiveStart)
     if (effectiveEnd) params.set('endDate', effectiveEnd)
     const a = document.createElement('a')
@@ -448,12 +451,16 @@ export default function AnalysisPage() {
                     <h3 className="text-sm font-semibold text-gray-700">Work Type <span className="text-[10px] font-normal text-gray-400">(closed)</span></h3>
                     <span className="text-xs text-gray-400">{total.toLocaleString()} closed</span>
                   </div>
-                  <div className="space-y-2.5">
+                  <div className="space-y-1.5">
                     {aggData.workTypeBreakdown.map(w => {
                       const barColor = WORK_TYPE_COLORS[w.type] || 'bg-gray-400'
                       const pct = Math.round((w.count / total) * 100)
                       return (
-                        <div key={w.type} className="flex items-center gap-3">
+                        <div
+                          key={w.type}
+                          className="flex items-center gap-3 -mx-1 px-1 py-1.5 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors active:scale-[0.99]"
+                          onClick={() => { setWorkTypeFilter(w.type); setTab('tickets') }}
+                        >
                           <span className="text-xs text-gray-600 w-28 shrink-0 truncate">{w.type}</span>
                           <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div
@@ -465,6 +472,7 @@ export default function AnalysisPage() {
                             <span className="text-sm font-bold text-gray-800">{w.count}</span>
                             <span className="text-[10px] text-gray-400">{pct}%</span>
                           </div>
+                          <ChevronRight size={12} className="text-gray-300 shrink-0" />
                         </div>
                       )
                     })}
@@ -749,6 +757,20 @@ export default function AnalysisPage() {
                     {d}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Work type active filter */}
+            {workTypeFilter && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-400 self-center">Work Type:</span>
+                <button
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1B2E6B] text-white"
+                  onClick={() => setWorkTypeFilter('')}
+                >
+                  {workTypeFilter}
+                  <X size={10} />
+                </button>
               </div>
             )}
 

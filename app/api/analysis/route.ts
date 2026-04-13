@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
       const search = searchParams.get('search') || ''
       const statusFilter = searchParams.get('status') || ''
       const deptFilter = searchParams.get('department') || ''
+      const workTypeFilter = searchParams.get('workType') || ''
 
       let query = db
         .from('workorder_ticket_summary')
@@ -39,6 +40,13 @@ export async function GET(req: NextRequest) {
       }
       if (statusFilter && statusFilter !== 'All') query = query.eq('ticket_status', statusFilter)
       if (deptFilter && deptFilter !== 'All') query = query.eq('department', deptFilter)
+      if (workTypeFilter) {
+        if (workTypeFilter === 'Unspecified') {
+          query = query.is('work_order_type', null)
+        } else {
+          query = query.eq('work_order_type', workTypeFilter)
+        }
+      }
       if (startDate) query = query.gte('issue_date', startDate)
       if (endDate) query = query.lte('issue_date', endDate + 'T23:59:59')
 
@@ -56,6 +64,7 @@ export async function GET(req: NextRequest) {
       const search = searchParams.get('search') || ''
       const statusFilter = searchParams.get('status') || ''
       const deptFilter = searchParams.get('department') || ''
+      const workTypeFilter = searchParams.get('workType') || ''
       const BATCH = 1000
       const exportRows: Record<string, unknown>[] = []
       let from = 0
@@ -74,6 +83,13 @@ export async function GET(req: NextRequest) {
         }
         if (statusFilter && statusFilter !== 'All') q = q.eq('ticket_status', statusFilter)
         if (deptFilter && deptFilter !== 'All') q = q.eq('department', deptFilter)
+        if (workTypeFilter) {
+          if (workTypeFilter === 'Unspecified') {
+            q = q.is('work_order_type', null)
+          } else {
+            q = q.eq('work_order_type', workTypeFilter)
+          }
+        }
         if (startDate) q = q.gte('issue_date', startDate)
         if (endDate) q = q.lte('issue_date', endDate + 'T23:59:59')
         const { data, error } = await q

@@ -2,9 +2,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { Search, ChevronDown, ChevronUp, X, BarChart2, Table2, List, Download, ChevronRight } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, X, BarChart2, Table2, List, Download, ChevronRight, MessageSquare, Send } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts'
 import BottomNav from '@/components/layout/BottomNav'
 
@@ -67,17 +68,36 @@ const TABS = [
   { key: 'overview', label: 'Overview', icon: BarChart2 },
   { key: 'tables',   label: 'Tables',   icon: Table2 },
   { key: 'tickets',  label: 'Tickets',  icon: List },
+  { key: 'chat',     label: 'Ask AI',   icon: MessageSquare },
 ] as const
+
+const CHART_COLORS_LIST = ['#1B2E6B', '#3B82F6', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6']
+
+interface ChartSpec {
+  chartType: 'bar' | 'line' | 'pie'
+  title: string
+  data: Record<string, unknown>[]
+  xKey: string
+  series: { key: string; label: string; color: string }[]
+  insight?: string
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  text?: string
+  chart?: ChartSpec
+  error?: boolean
+}
 
 export default function AnalysisPage() {
   const router = useRouter()
   const { role, assets, loading } = useAuth()
 
-  const [tab, setTab] = useState<'overview' | 'tables' | 'tickets'>('overview')
+  const [tab, setTab] = useState<'overview' | 'tables' | 'tickets' | 'chat'>('overview')
   const [aggData, setAggData] = useState<AggData | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
   const [deptFilter, setDeptFilter] = useState('All')
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Open']))
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
 
   // Ticket table state
   const [tableRows, setTableRows] = useState<TableRow[]>([])
@@ -90,6 +110,11 @@ export default function AnalysisPage() {
   const [workTypeFilter, setWorkTypeFilter] = useState('All')
   const [tableLoading, setTableLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
 
   // Date range filter
   const [datePreset, setDatePreset] = useState<'all' | 'week' | 'month' | 'lastmonth' | 'ytd' | 'custom'>('all')
@@ -205,6 +230,33 @@ export default function AnalysisPage() {
 
     return { equipBreakdownData: data, topEquipTypes: topEquip }
   }, [aggData, deptFilter])
+
+  async function sendChat() {
+    if (!chatInput.trim() || chatLoading || !aggData) return
+    const question = chatInput.trim()
+    setChatInput('')
+    setChatMessages(prev => [...prev, { role: 'user', text: question }])
+    setChatLoading(true)
+    try {
+      const res = await fetch('/api/analysis/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, aggData }),
+      })
+      const json = await res.json()
+      if (json.type === 'chart') {
+        setChatMessages(prev => [...prev, { role: 'assistant', chart: json as ChartSpec }])
+      } else if (json.type === 'text') {
+        setChatMessages(prev => [...prev, { role: 'assistant', text: json.text }])
+      } else {
+        setChatMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I could not process that.', error: true }])
+      }
+    } catch {
+      setChatMessages(prev => [...prev, { role: 'assistant', text: 'Something went wrong. Please try again.', error: true }])
+    } finally {
+      setChatLoading(false)
+    }
+  }
 
   if (loading || !aggData) {
     return (
@@ -937,6 +989,129 @@ export default function AnalysisPage() {
                 {tableLoading ? 'Loading…' : `Load more (${(tableCount - tableRows.length).toLocaleString()} remaining)`}
               </button>
             )}
+          </div>
+        )}
+
+        {/* ── Chat Tab ── */}
+        {tab === 'chat' && (
+          <div className="flex flex-col h-full">
+            {/* Message list */}
+            <div className="flex-1 overflow-y-auto px-4 pt-3 pb-2 space-y-3">
+              {chatMessages.length === 0 && (
+                <div className="pt-8 text-center">
+                  <div className="w-12 h-12 rounded-full bg-[#1B2E6B]/10 flex items-center justify-center mx-auto mb-3">
+                    <MessageSquare size={22} className="text-[#1B2E6B]" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700 mb-1">Ask anything about your work orders</p>
+                  <p className="text-xs text-gray-400">Try: "Show repair costs by department" or "Which equipment breaks down most?"</p>
+                  <div className="mt-4 grid grid-cols-1 gap-2">
+                    {[
+                      'Show ticket counts by status',
+                      'What are the top 5 equipment failures?',
+                      'Compare est. cost vs repair cost by department',
+                      'How has ticket volume trended this year?',
+                    ].map(q => (
+                      <button
+                        key={q}
+                        className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-[#1B2E6B] transition-colors"
+                        onClick={() => { setChatInput(q) }}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.role === 'user' ? (
+                    <div className="max-w-[80%] px-3.5 py-2.5 rounded-2xl rounded-tr-sm bg-[#1B2E6B] text-white text-sm">
+                      {msg.text}
+                    </div>
+                  ) : msg.chart ? (
+                    <div className="w-full bg-white rounded-xl border border-gray-100 shadow-sm p-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">{msg.chart.title}</p>
+                      <ResponsiveContainer width="100%" height={200}>
+                        {msg.chart.chartType === 'pie' ? (
+                          <PieChart>
+                            <Pie data={msg.chart.data as { label: string; value: number }[]} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={70} label={(props) => `${props.name} ${((props.percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
+                              {msg.chart.data.map((_, idx) => (
+                                <Cell key={idx} fill={CHART_COLORS_LIST[idx % CHART_COLORS_LIST.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        ) : msg.chart.chartType === 'line' ? (
+                          <LineChart data={msg.chart.data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis dataKey={msg.chart.xKey} tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} />
+                            <Tooltip />
+                            {msg.chart.series.length > 1 && <Legend wrapperStyle={{ fontSize: 10 }} />}
+                            {msg.chart.series.map(s => (
+                              <Line key={s.key} type="monotone" dataKey={s.key} name={s.label} stroke={s.color} strokeWidth={2} dot={false} />
+                            ))}
+                          </LineChart>
+                        ) : (
+                          <BarChart data={msg.chart.data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis dataKey={msg.chart.xKey} tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} />
+                            <Tooltip />
+                            {msg.chart.series.length > 1 && <Legend wrapperStyle={{ fontSize: 10 }} />}
+                            {msg.chart.series.map(s => (
+                              <Bar key={s.key} dataKey={s.key} name={s.label} fill={s.color} radius={[3, 3, 0, 0]} />
+                            ))}
+                          </BarChart>
+                        )}
+                      </ResponsiveContainer>
+                      {msg.chart.insight && (
+                        <p className="mt-2 text-xs text-gray-500 border-t border-gray-100 pt-2">{msg.chart.insight}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-sm ${msg.error ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-800'}`}>
+                      {msg.text}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-gray-100">
+                    <div className="flex gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input bar */}
+            <div className="px-4 py-3 border-t border-gray-100 bg-white">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B2E6B] focus:bg-white transition-colors"
+                  placeholder="Ask about your work orders…"
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()}
+                  disabled={chatLoading}
+                />
+                <button
+                  className="w-9 h-9 rounded-full bg-[#1B2E6B] flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
+                  onClick={sendChat}
+                  disabled={chatLoading || !chatInput.trim()}
+                >
+                  <Send size={15} className="text-white" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

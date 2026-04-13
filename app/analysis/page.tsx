@@ -2,20 +2,21 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { Search, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, X, BarChart2, Table2, List } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 import BottomNav from '@/components/layout/BottomNav'
 
 const STATUSES = ['Open', 'In Progress', 'Backlogged', 'Awaiting Cost', 'Closed']
+const BACKLOG_STATUSES = ['Open', 'In Progress', 'Backlogged']
 
-const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
-  'Open':          { bg: 'bg-blue-50',   text: 'text-[#1B2E6B]', dot: 'bg-[#1B2E6B]' },
-  'In Progress':   { bg: 'bg-amber-50',  text: 'text-amber-800', dot: 'bg-amber-400' },
-  'Backlogged':    { bg: 'bg-gray-100',  text: 'text-gray-700',  dot: 'bg-gray-400' },
-  'Awaiting Cost': { bg: 'bg-orange-50', text: 'text-orange-800', dot: 'bg-orange-400' },
-  'Closed':        { bg: 'bg-green-50',  text: 'text-green-800', dot: 'bg-emerald-500' },
+const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string; border: string }> = {
+  'Open':          { bg: 'bg-blue-50',   text: 'text-[#1B2E6B]', dot: 'bg-[#1B2E6B]',   border: 'border-blue-100' },
+  'In Progress':   { bg: 'bg-amber-50',  text: 'text-amber-800', dot: 'bg-amber-400',   border: 'border-amber-100' },
+  'Backlogged':    { bg: 'bg-gray-100',  text: 'text-gray-700',  dot: 'bg-gray-400',    border: 'border-gray-200' },
+  'Awaiting Cost': { bg: 'bg-orange-50', text: 'text-orange-800', dot: 'bg-orange-400', border: 'border-orange-100' },
+  'Closed':        { bg: 'bg-green-50',  text: 'text-green-800', dot: 'bg-emerald-500', border: 'border-green-100' },
 }
 
 const CHART_COLORS = ['#1B2E6B', '#3B82F6', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6']
@@ -58,12 +59,19 @@ interface TableRow {
   repair_cost: number | null
 }
 
+const TABS = [
+  { key: 'overview', label: 'Overview', icon: BarChart2 },
+  { key: 'tables',   label: 'Tables',   icon: Table2 },
+  { key: 'tickets',  label: 'Tickets',  icon: List },
+] as const
+
 export default function AnalysisPage() {
   const router = useRouter()
   const { role, assets, loading } = useAuth()
 
   const [tab, setTab] = useState<'overview' | 'tables' | 'tickets'>('overview')
   const [aggData, setAggData] = useState<AggData | null>(null)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
   const [deptFilter, setDeptFilter] = useState('All')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Open']))
 
@@ -77,11 +85,9 @@ export default function AnalysisPage() {
   const [tableDeptFilter, setTableDeptFilter] = useState('All')
   const [tableLoading, setTableLoading] = useState(false)
 
-  // Redirect field_user (analyst, admin, foreman all have access)
+  // Redirect field_user
   useEffect(() => {
-    if (!loading && role === 'field_user') {
-      router.replace('/')
-    }
+    if (!loading && role === 'field_user') router.replace('/')
   }, [role, loading, router])
 
   // Fetch aggregated data
@@ -92,7 +98,7 @@ export default function AnalysisPage() {
     params.set('_t', Date.now().toString())
     fetch(`/api/analysis?${params}`)
       .then(r => r.json())
-      .then(setAggData)
+      .then(d => { setAggData(d); setLastRefreshed(new Date()) })
       .catch(() => {})
   }, [assets, loading])
 
@@ -161,16 +167,21 @@ export default function AnalysisPage() {
       <div className="flex flex-col min-h-screen pb-16">
         <div className="page-header"><h1 className="page-title">Analysis</h1></div>
         <div className="p-4 space-y-4">
-          {[0, 1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}
+          {[0, 1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}
         </div>
         <BottomNav />
       </div>
     )
   }
 
-  if (!aggData) return null
-
   const { statusTables, costByDept, backlogHealth, monthlyTrend, departments } = aggData
+
+  // Derive status totals for the KPI summary row
+  const statusTotals = STATUSES.reduce((acc, s) => {
+    acc[s] = (statusTables[s] || []).reduce((sum, r) => sum + r.count, 0)
+    return acc
+  }, {} as Record<string, number>)
+  const grandTotal = Object.values(statusTotals).reduce((s, n) => s + n, 0)
 
   function toggleSection(key: string) {
     setExpandedSections(prev => {
@@ -185,18 +196,22 @@ export default function AnalysisPage() {
       {/* Header */}
       <div className="page-header">
         <h1 className="page-title">Analysis</h1>
+        {lastRefreshed && (
+          <span className="text-xs text-gray-400 ml-auto">Updated {lastRefreshed.toLocaleTimeString()}</span>
+        )}
       </div>
 
       {/* Tab bar */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100">
         <div className="flex">
-          {(['overview', 'tables', 'tickets'] as const).map(t => (
+          {TABS.map(({ key, label, icon: Icon }) => (
             <button
-              key={t}
-              className={`flex-1 py-2.5 text-sm font-medium capitalize transition-colors ${tab === t ? 'text-[#1B2E6B] border-b-2 border-[#1B2E6B]' : 'text-gray-500'}`}
-              onClick={() => setTab(t)}
+              key={key}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors ${tab === key ? 'text-[#1B2E6B] border-b-2 border-[#1B2E6B]' : 'text-gray-400'}`}
+              onClick={() => setTab(key)}
             >
-              {t === 'overview' ? 'Overview' : t === 'tables' ? 'Tables' : 'Tickets'}
+              <Icon size={14} />
+              {label}
             </button>
           ))}
         </div>
@@ -207,21 +222,77 @@ export default function AnalysisPage() {
         {/* ── OVERVIEW TAB ── */}
         {tab === 'overview' && (
           <>
+            {/* KPI Summary Row */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ticket Summary</span>
+                <span className="text-xs text-gray-400">{grandTotal.toLocaleString()} total</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {STATUSES.filter(s => s !== 'Closed').map(status => {
+                  const c = STATUS_STYLE[status]
+                  const count = statusTotals[status] || 0
+                  return (
+                    <button
+                      key={status}
+                      className={`${c.bg} border ${c.border} rounded-xl p-3 text-left transition-all hover:shadow-sm active:scale-[0.98]`}
+                      onClick={() => { setTab('tables'); setExpandedSections(new Set([status])) }}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                        <span className={`text-[10px] font-medium ${c.text} opacity-70`}>{status}</span>
+                      </div>
+                      <span className={`text-2xl font-bold ${c.text}`}>{count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {/* Closed — full width */}
+              {(() => {
+                const c = STATUS_STYLE['Closed']
+                const count = statusTotals['Closed'] || 0
+                return (
+                  <button
+                    className={`w-full ${c.bg} border ${c.border} rounded-xl p-3 flex items-center justify-between transition-all hover:shadow-sm active:scale-[0.99]`}
+                    onClick={() => { setTab('tables'); setExpandedSections(new Set(['Closed'])) }}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                        <span className={`text-[10px] font-medium ${c.text} opacity-70`}>Closed</span>
+                      </div>
+                      <span className={`text-2xl font-bold ${c.text}`}>{count}</span>
+                    </div>
+                    <span className={`text-xs ${c.text} opacity-40`}>View →</span>
+                  </button>
+                )
+              })()}
+            </div>
+
             {/* Backlog Health */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Backlog Health</h3>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-2.5">
                 {backlogHealth.map(({ status, count, avgDays }) => {
                   const c = STATUS_STYLE[status]
+                  const maxDays = Math.max(...backlogHealth.map(b => b.avgDays), 1)
                   return (
-                    <div key={status} className={`${c.bg} rounded-xl p-3`}>
-                      <div className="flex items-center gap-1 mb-1">
-                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot}`} />
-                        <span className={`text-[10px] font-medium ${c.text} opacity-70 leading-tight`}>{status}</span>
+                    <div key={status} className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 w-24 shrink-0">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${c.dot}`} />
+                        <span className={`text-xs font-medium ${c.text} truncate`}>{status}</span>
                       </div>
-                      <div className={`text-2xl font-bold ${c.text}`}>{avgDays}</div>
-                      <div className={`text-[10px] ${c.text} opacity-60`}>avg days</div>
-                      <div className={`text-[10px] ${c.text} opacity-50`}>{count} tickets</div>
+                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${c.dot}`}
+                          style={{ width: `${Math.round((avgDays / maxDays) * 100)}%` }}
+                        />
+                      </div>
+                      <div className="text-right w-20 shrink-0">
+                        <span className="text-sm font-bold text-gray-800">{avgDays}</span>
+                        <span className="text-xs text-gray-400"> days</span>
+                      </div>
+                      <span className="text-xs text-gray-400 w-14 text-right shrink-0">{count} tickets</span>
                     </div>
                   )
                 })}
@@ -230,11 +301,19 @@ export default function AnalysisPage() {
 
             {/* Monthly Trend */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Monthly Trend</h3>
-              <ResponsiveContainer width="100%" height={120}>
-                <BarChart data={monthlyTrend} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Monthly Trend (12 months)</h3>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={monthlyTrend} margin={{ top: 4, right: 4, left: -24, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                    axisLine={false}
+                    tickLine={false}
+                    angle={-35}
+                    textAnchor="end"
+                    interval={0}
+                  />
                   <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip cursor={{ fill: '#F3F4F6' }} formatter={(v) => [v, 'Tickets']} />
                   <Bar dataKey="count" fill="#1B2E6B" radius={[4, 4, 0, 0]} activeBar={{ fill: '#2B3E8B', stroke: 'none' }} />
@@ -257,13 +336,21 @@ export default function AnalysisPage() {
                     </button>
                   ))}
                 </div>
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={equipBreakdownData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={equipBreakdownData} margin={{ top: 4, right: 4, left: -24, bottom: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                    <XAxis dataKey="field" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                    <XAxis
+                      dataKey="field"
+                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                      axisLine={false}
+                      tickLine={false}
+                      angle={-35}
+                      textAnchor="end"
+                      interval={0}
+                    />
                     <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} />
                     <Tooltip cursor={{ fill: '#F3F4F6' }} />
-                    <Legend wrapperStyle={{ fontSize: 10 }} />
+                    <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
                     {topEquipTypes.map((equip, i) => (
                       <Bar key={equip} dataKey={equip} stackId="a" fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
@@ -276,13 +363,21 @@ export default function AnalysisPage() {
             {costByDept.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Cost by Department</h3>
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={costByDept} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={costByDept} margin={{ top: 4, right: 4, left: -8, bottom: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                    <XAxis dataKey="dept" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                    <XAxis
+                      dataKey="dept"
+                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                      axisLine={false}
+                      tickLine={false}
+                      angle={-35}
+                      textAnchor="end"
+                      interval={0}
+                    />
                     <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} />
                     <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
-                    <Legend wrapperStyle={{ fontSize: 10 }} />
+                    <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
                     <Bar dataKey="estCost" name="Est. Cost" fill="#1B2E6B" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="repairCost" name="Repair Cost" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -423,8 +518,53 @@ export default function AnalysisPage() {
 
             <p className="text-xs text-gray-400">{tableCount.toLocaleString()} tickets</p>
 
-            {/* Table */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* Mobile: card list */}
+            <div className="md:hidden space-y-2">
+              {tableRows.map(r => {
+                const location = r.location_type === 'Well' ? (r.well || '—') : (r.facility || '—')
+                const estCost = r.Estimate_Cost || 0
+                const repairCost = r.repair_cost || 0
+                const savings = estCost - repairCost
+                const c = STATUS_STYLE[r.ticket_status] || STATUS_STYLE['Open']
+                return (
+                  <div
+                    key={r.ticket_id}
+                    className="bg-white rounded-xl border border-gray-100 shadow-sm p-3.5 cursor-pointer active:opacity-80 transition-opacity"
+                    onClick={() => router.push(`/maintenance/${r.ticket_id}`)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <span className="text-xs font-bold text-[#1B2E6B]">#{r.ticket_id}</span>
+                        <span className="text-xs text-gray-400 ml-1.5">{r.issue_date ? new Date(r.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : ''}</span>
+                      </div>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${c.bg} ${c.text}`}>
+                        <span className={`w-1 h-1 rounded-full shrink-0 ${c.dot}`} />
+                        {r.ticket_status}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-800 truncate mb-1">{r.equipment_name || '—'}</p>
+                    <p className="text-xs text-gray-500 truncate mb-2">{r.issue_description || '—'}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                      {r.department && <span>{r.department}</span>}
+                      {location !== '—' && <span>{location}</span>}
+                      {estCost > 0 && <span className="text-gray-700">Est: {fmt(estCost)}</span>}
+                      {repairCost > 0 && <span className="text-gray-700">Repair: {fmt(repairCost)}</span>}
+                      {(estCost > 0 || repairCost > 0) && (
+                        <span className={`font-medium ${savings >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                          {fmtSavings(savings)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              {tableRows.length === 0 && !tableLoading && (
+                <p className="text-center text-xs text-gray-400 py-8">No tickets found.</p>
+              )}
+            </div>
+
+            {/* Desktop: full table */}
+            <div className="hidden md:block bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50 border-b border-gray-100">

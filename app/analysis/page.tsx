@@ -714,68 +714,89 @@ export default function AnalysisPage() {
         {/* ── TICKETS TAB ── */}
         {tab === 'tickets' && (
           <div className="space-y-3">
-            {/* Search */}
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1B2E6B]/20 focus:border-[#1B2E6B]"
-                placeholder="Search tickets…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              {search && (
-                <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch('')}>
-                  <X size={14} className="text-gray-400" />
+            {/* Filter card */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 space-y-3">
+
+              {/* Search */}
+              <div className="relative">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  className="w-full pl-9 pr-9 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1B2E6B]/20 focus:border-[#1B2E6B] transition-colors"
+                  placeholder="Search tickets…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch('')}>
+                    <X size={13} className="text-gray-400" />
+                  </button>
+                )}
+              </div>
+
+              {/* Status */}
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Status</p>
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                  {['All', ...STATUSES].map(s => (
+                    <button
+                      key={s}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${statusFilter === s ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      onClick={() => setStatusFilter(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Department */}
+              {departments.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Department</p>
+                  <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                    {['All', ...departments].map(d => (
+                      <button
+                        key={d}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${tableDeptFilter === d ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        onClick={() => setTableDeptFilter(d)}
+                      >
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Work Type */}
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Work Type</p>
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                  {['All', ...WORK_TYPES].map(w => (
+                    <button
+                      key={w}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${workTypeFilter === w ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      onClick={() => setWorkTypeFilter(w)}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reset */}
+              {(search || statusFilter !== 'All' || tableDeptFilter !== 'All' || workTypeFilter !== 'All') && (
+                <button
+                  className="w-full py-1.5 text-xs font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                  onClick={() => { setSearch(''); setStatusFilter('All'); setTableDeptFilter('All'); setWorkTypeFilter('All') }}
+                >
+                  Reset Filters
                 </button>
               )}
             </div>
 
-            {/* Status filter */}
-            <div className="flex gap-1.5 flex-wrap">
-              <span className="text-xs text-gray-400 self-center">Status:</span>
-              {['All', ...STATUSES].map(s => (
-                <button
-                  key={s}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${statusFilter === s ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  onClick={() => setStatusFilter(s)}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-
-            {/* Department filter */}
-            {departments.length > 0 && (
-              <div className="flex gap-1.5 flex-wrap">
-                <span className="text-xs text-gray-400 self-center">Dept:</span>
-                {['All', ...departments].map(d => (
-                  <button
-                    key={d}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${tableDeptFilter === d ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                    onClick={() => setTableDeptFilter(d)}
-                  >
-                    {d}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Work type filter */}
-            <div className="flex gap-1.5 flex-wrap">
-              <span className="text-xs text-gray-400 self-center">Work Type:</span>
-              {['All', ...WORK_TYPES].map(w => (
-                <button
-                  key={w}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${workTypeFilter === w ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  onClick={() => setWorkTypeFilter(w)}
-                >
-                  {w}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between">
+            {/* Count + Export */}
+            <div className="flex items-center justify-between px-0.5">
               <p className="text-xs text-gray-400">{tableCount.toLocaleString()} tickets</p>
               <button
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#1B2E6B] bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"

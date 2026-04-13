@@ -9,6 +9,7 @@ import {
 import BottomNav from '@/components/layout/BottomNav'
 
 const STATUSES = ['Open', 'In Progress', 'Backlogged', 'Awaiting Cost', 'Closed']
+const WORK_TYPES = ['LOE', 'AFE - Workover', 'AFE - Capital', 'Unspecified']
 
 const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string; border: string }> = {
   'Open':          { bg: 'bg-blue-50',   text: 'text-[#1B2E6B]', dot: 'bg-[#1B2E6B]',   border: 'border-blue-100' },
@@ -86,7 +87,7 @@ export default function AnalysisPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [tableDeptFilter, setTableDeptFilter] = useState('All')
-  const [workTypeFilter, setWorkTypeFilter] = useState('')
+  const [workTypeFilter, setWorkTypeFilter] = useState('All')
   const [tableLoading, setTableLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -156,7 +157,7 @@ export default function AnalysisPage() {
     if (debouncedSearch) params.set('search', debouncedSearch)
     if (statusFilter !== 'All') params.set('status', statusFilter)
     if (tableDeptFilter !== 'All') params.set('department', tableDeptFilter)
-    if (workTypeFilter) params.set('workType', workTypeFilter)
+    if (workTypeFilter && workTypeFilter !== 'All') params.set('workType', workTypeFilter)
     if (effectiveStart) params.set('startDate', effectiveStart)
     if (effectiveEnd) params.set('endDate', effectiveEnd)
     setTableLoading(true)
@@ -234,7 +235,7 @@ export default function AnalysisPage() {
     if (debouncedSearch) params.set('search', debouncedSearch)
     if (statusFilter !== 'All') params.set('status', statusFilter)
     if (tableDeptFilter !== 'All') params.set('department', tableDeptFilter)
-    if (workTypeFilter) params.set('workType', workTypeFilter)
+    if (workTypeFilter && workTypeFilter !== 'All') params.set('workType', workTypeFilter)
     if (effectiveStart) params.set('startDate', effectiveStart)
     if (effectiveEnd) params.set('endDate', effectiveEnd)
     const a = document.createElement('a')
@@ -459,7 +460,7 @@ export default function AnalysisPage() {
                         <div
                           key={w.type}
                           className="flex items-center gap-3 -mx-1 px-1 py-1.5 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors active:scale-[0.99]"
-                          onClick={() => { setWorkTypeFilter(w.type); setTab('tickets') }}
+                          onClick={() => { setWorkTypeFilter(w.type === 'Unspecified' ? 'Unspecified' : w.type); setTab('tickets') }}
                         >
                           <span className="text-xs text-gray-600 w-28 shrink-0 truncate">{w.type}</span>
                           <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -760,19 +761,19 @@ export default function AnalysisPage() {
               </div>
             )}
 
-            {/* Work type active filter */}
-            {workTypeFilter && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-400 self-center">Work Type:</span>
+            {/* Work type filter */}
+            <div className="flex gap-1.5 flex-wrap">
+              <span className="text-xs text-gray-400 self-center">Work Type:</span>
+              {['All', ...WORK_TYPES].map(w => (
                 <button
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1B2E6B] text-white"
-                  onClick={() => setWorkTypeFilter('')}
+                  key={w}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${workTypeFilter === w ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  onClick={() => setWorkTypeFilter(w)}
                 >
-                  {workTypeFilter}
-                  <X size={10} />
+                  {w}
                 </button>
-              </div>
-            )}
+              ))}
+            </div>
 
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-400">{tableCount.toLocaleString()} tickets</p>

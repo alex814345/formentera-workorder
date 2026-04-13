@@ -92,20 +92,26 @@ export default function AnalysisPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Date range filter
-  const [datePreset, setDatePreset] = useState<'all' | 'month' | '30d' | 'ytd' | 'custom'>('all')
+  const [datePreset, setDatePreset] = useState<'all' | 'week' | 'month' | 'lastmonth' | 'ytd' | 'custom'>('all')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
 
   const { effectiveStart, effectiveEnd } = useMemo(() => {
     const today = new Date()
     const todayStr = today.toISOString().slice(0, 10)
+    if (datePreset === 'week') {
+      const d = new Date(today)
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) // Monday of current week
+      return { effectiveStart: d.toISOString().slice(0, 10), effectiveEnd: todayStr }
+    }
     if (datePreset === 'month') {
       const d = new Date(today.getFullYear(), today.getMonth(), 1)
       return { effectiveStart: d.toISOString().slice(0, 10), effectiveEnd: todayStr }
     }
-    if (datePreset === '30d') {
-      const d = new Date(today.getTime() - 30 * 86400000)
-      return { effectiveStart: d.toISOString().slice(0, 10), effectiveEnd: todayStr }
+    if (datePreset === 'lastmonth') {
+      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+      const end = new Date(today.getFullYear(), today.getMonth(), 0)
+      return { effectiveStart: start.toISOString().slice(0, 10), effectiveEnd: end.toISOString().slice(0, 10) }
     }
     if (datePreset === 'ytd') {
       return { effectiveStart: `${today.getFullYear()}-01-01`, effectiveEnd: todayStr }
@@ -278,13 +284,13 @@ export default function AnalysisPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Date Range</p>
           <div className="flex gap-1.5 flex-wrap">
-            {(['all', 'month', '30d', 'ytd', 'custom'] as const).map(p => (
+            {(['all', 'week', 'month', 'lastmonth', 'ytd', 'custom'] as const).map(p => (
               <button
                 key={p}
                 className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${datePreset === p ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 onClick={() => setDatePreset(p)}
               >
-                {p === 'all' ? 'All Time' : p === 'month' ? 'This Month' : p === '30d' ? 'Last 30d' : p === 'ytd' ? 'YTD' : 'Custom'}
+                {p === 'all' ? 'All Time' : p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : p === 'lastmonth' ? 'Last Month' : p === 'ytd' ? 'YTD' : 'Custom'}
               </button>
             ))}
           </div>
@@ -737,16 +743,19 @@ export default function AnalysisPage() {
               {/* Status */}
               <div>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Status</p>
-                <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-                  {['All', ...STATUSES].map(s => (
-                    <button
-                      key={s}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${statusFilter === s ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                      onClick={() => setStatusFilter(s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                <div className="relative">
+                  <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                    {['All', ...STATUSES].map(s => (
+                      <button
+                        key={s}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${statusFilter === s ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        onClick={() => setStatusFilter(s)}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="absolute right-0 top-0 bottom-0.5 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
                 </div>
               </div>
 
@@ -754,16 +763,19 @@ export default function AnalysisPage() {
               {departments.length > 0 && (
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Department</p>
-                  <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-                    {['All', ...departments].map(d => (
-                      <button
-                        key={d}
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${tableDeptFilter === d ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        onClick={() => setTableDeptFilter(d)}
-                      >
-                        {d}
-                      </button>
-                    ))}
+                  <div className="relative">
+                    <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                      {['All', ...departments].map(d => (
+                        <button
+                          key={d}
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${tableDeptFilter === d ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                          onClick={() => setTableDeptFilter(d)}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="absolute right-0 top-0 bottom-0.5 w-10 bg-gradient-to-l from-white to-transparent pointer-events-none" />
                   </div>
                 </div>
               )}
@@ -771,16 +783,19 @@ export default function AnalysisPage() {
               {/* Work Type */}
               <div>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Work Type</p>
-                <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-                  {['All', ...WORK_TYPES].map(w => (
-                    <button
-                      key={w}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${workTypeFilter === w ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                      onClick={() => setWorkTypeFilter(w)}
-                    >
-                      {w}
-                    </button>
-                  ))}
+                <div className="relative">
+                  <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                    {['All', ...WORK_TYPES].map(w => (
+                      <button
+                        key={w}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${workTypeFilter === w ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        onClick={() => setWorkTypeFilter(w)}
+                      >
+                        {w}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="absolute right-0 top-0 bottom-0.5 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
                 </div>
               </div>
 

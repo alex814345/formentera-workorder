@@ -445,8 +445,8 @@ export default function AnalysisPage() {
               return (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-700">Work Type</h3>
-                    <span className="text-xs text-gray-400">{total.toLocaleString()} total</span>
+                    <h3 className="text-sm font-semibold text-gray-700">Work Type <span className="text-[10px] font-normal text-gray-400">(closed)</span></h3>
+                    <span className="text-xs text-gray-400">{total.toLocaleString()} closed</span>
                   </div>
                   <div className="space-y-2.5">
                     {aggData.workTypeBreakdown.map(w => {

@@ -254,9 +254,10 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.days_open - a.days_open)
       .slice(0, 10)
 
-    // 9. Work type breakdown
+    // 9. Work type breakdown — closed tickets only
     const workTypeMap = new Map<string, number>()
     for (const r of rows) {
+      if (r.ticket_status !== 'Closed') continue
       const type = r.work_order_type || 'Unspecified'
       workTypeMap.set(type, (workTypeMap.get(type) || 0) + 1)
     }

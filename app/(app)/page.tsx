@@ -18,7 +18,7 @@ export default function HomePage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-6 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 pt-6 pb-4 lg:max-w-4xl">
         {/* Logo Banner */}
         <div className="relative w-full rounded-lg overflow-hidden mb-6 aspect-[5/1] lg:hidden">
           <Image
@@ -34,7 +34,7 @@ export default function HomePage() {
         {!isAnalyst && (
           <>
             <h2 className="text-lg font-bold text-gray-900 text-center mb-4">Submit a Ticket</h2>
-            <Link href="/maintenance/new" className="btn-primary lg:max-w-xs">
+            <Link href="/maintenance/new" className="btn-primary">
               <Wrench size={18} />
               Maintenance Ticket
             </Link>

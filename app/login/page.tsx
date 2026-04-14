@@ -101,7 +101,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowEmail(true)}
-              className="w-full mt-4 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="w-full mt-6 text-xs text-gray-400 hover:text-gray-600 transition-colors underline underline-offset-2"
             >
               Sign in with email instead
             </button>

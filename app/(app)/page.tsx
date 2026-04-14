@@ -24,8 +24,8 @@ export default function HomePage() {
           <Image
             src="/Formentera Workorder Banner.webp"
             alt="Formentera"
-            width={1600}
-            height={400}
+            width={800}
+            height={200}
             className="w-full h-auto"
             priority
           />

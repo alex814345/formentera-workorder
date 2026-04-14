@@ -959,7 +959,7 @@ export default function MaintenanceTicketPage() {
                 <label className="form-label">Priority of Issue</label>
                 <div className="space-y-2">
                   {PRIORITY_OPTIONS.map(p => (
-                    <label key={p} className="flex items-center gap-2 cursor-pointer">
+                    <label key={p} className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg transition-all hover:bg-gray-100 hover:shadow-sm">
                       <input
                         type="radio"
                         name="priority"

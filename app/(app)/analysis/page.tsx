@@ -409,7 +409,7 @@ export default function AnalysisPage() {
                   return (
                     <button
                       key={status}
-                      className={`${c.bg} border ${c.border} rounded-xl p-3 text-left transition-all hover:shadow-sm active:scale-[0.98]`}
+                      className={`${c.bg} border ${c.border} rounded-xl p-3 text-left transition-all hover:shadow-md hover:scale-[1.02] hover:border-gray-300 active:scale-[0.98]`}
                       onClick={() => { setTab('tables'); setExpandedSections(new Set([status])) }}
                     >
                       <div className="flex items-center gap-1.5 mb-1">
@@ -427,7 +427,7 @@ export default function AnalysisPage() {
                 const count = statusTotals['Closed'] || 0
                 return (
                   <button
-                    className={`w-full ${c.bg} border ${c.border} rounded-xl p-3 flex items-center justify-between transition-all hover:shadow-sm active:scale-[0.99]`}
+                    className={`w-full ${c.bg} border ${c.border} rounded-xl p-3 flex items-center justify-between transition-all hover:shadow-md hover:scale-[1.01] hover:border-gray-300 active:scale-[0.99]`}
                     onClick={() => { setTab('tables'); setExpandedSections(new Set(['Closed'])) }}
                   >
                     <div>

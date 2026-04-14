@@ -112,7 +112,7 @@ export default function MaintenanceFormPage() {
         <h1 className="page-title">Maintenance Form</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 lg:px-32">
         <h2 className="text-xl font-bold text-gray-900 text-center">Maintenance Form</h2>
 
         {/* Department */}

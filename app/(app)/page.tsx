@@ -20,7 +20,7 @@ export default function HomePage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pt-6 pb-4">
         {/* Logo Banner */}
-        <div className="w-full rounded-lg overflow-hidden mb-6 lg:max-h-40">
+        <div className="w-full rounded-lg overflow-hidden mb-6">
           <Image
             src="/Formentera Workorder Banner.webp"
             alt="Formentera"

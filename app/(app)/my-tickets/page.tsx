@@ -201,8 +201,8 @@ export default function MyTicketsPage() {
                       <button
                         key={s}
                         onClick={() => setStatusFilter(s)}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                          statusFilter === s ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600'
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                          statusFilter === s ? 'bg-[#1B2E6B] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:shadow-sm hover:scale-105'
                         }`}
                       >
                         {s}{s !== 'All' ? ` ${STATUS_EMOJI[s] ?? '⚪'}` : ''}

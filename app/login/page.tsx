@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import Image from 'next/image'
 import { Wrench } from 'lucide-react'
 
 export default function LoginPage() {
@@ -51,12 +52,14 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
         {/* Logo */}
         <div className="mb-10 text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-[#1B2E6B] flex items-center justify-center rounded">
-              <span className="text-white font-bold text-xl">F</span>
-            </div>
-            <span className="text-3xl font-bold tracking-widest text-[#1B2E6B]">FORMENTERA</span>
-          </div>
+          <Image
+            src="/formentera_logo.jpg"
+            alt="Formentera Operations"
+            width={220}
+            height={80}
+            className="mx-auto mb-2"
+            priority
+          />
           <p className="text-sm text-gray-400 mt-1 flex items-center justify-center gap-1.5">
             <Wrench size={13} /> Work Order App
           </p>
@@ -66,13 +69,35 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Sign in to continue</h2>
 
+          {/* Microsoft SSO — primary */}
+          <button
+            type="button"
+            onClick={handleMicrosoftLogin}
+            disabled={msLoading}
+            className="w-full flex items-center justify-center gap-3 bg-[#1B2E6B] text-white rounded-lg px-4 py-3 text-sm font-semibold hover:bg-[#152358] transition-colors disabled:opacity-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 21 21">
+              <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+              <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+              <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+              <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            {msLoading ? 'Redirecting…' : 'Sign in with Microsoft'}
+          </button>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">or sign in with email</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="form-label">Email</label>
               <input
                 type="email"
                 className="form-input"
-                placeholder="you@formenteraops.com"
+                placeholder="Enter your email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -101,33 +126,12 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="btn-primary mt-2"
+              className="w-full border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
               disabled={loading}
             >
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
-
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">or</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleMicrosoftLogin}
-            disabled={msLoading}
-            className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 21 21">
-              <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-              <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-              <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-              <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-            </svg>
-            {msLoading ? 'Redirecting…' : 'Sign in with Microsoft'}
-          </button>
 
           <button
             type="button"

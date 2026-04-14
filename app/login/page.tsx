@@ -52,14 +52,20 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
         {/* Logo */}
         <div className="mb-10 text-center">
-          <Image
-            src="/formentera_logo.jpg"
-            alt="Formentera Operations"
-            width={220}
-            height={80}
-            className="mx-auto mb-2"
-            priority
-          />
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-12 h-12 bg-[#1B2E6B] flex items-center justify-center rounded">
+              <span className="text-white font-bold text-xl">F</span>
+            </div>
+            <span className="text-3xl font-bold tracking-widest text-[#1B2E6B]">FORMENTERA</span>
+            <Image
+              src="/formentera_logo.jpg"
+              alt="Formentera Operations"
+              width={48}
+              height={48}
+              className="rounded"
+              priority
+            />
+          </div>
           <p className="text-sm text-gray-400 mt-1 flex items-center justify-center gap-1.5">
             <Wrench size={13} /> Work Order App
           </p>
@@ -83,6 +89,14 @@ export default function LoginPage() {
               <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
             </svg>
             {msLoading ? 'Redirecting…' : 'Sign in with Microsoft'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            className="w-full mt-2 text-sm text-gray-400 hover:text-[#1B2E6B] transition-colors underline underline-offset-2"
+          >
+            Need help signing in?
           </button>
 
           <div className="flex items-center gap-3 my-5">
@@ -132,14 +146,6 @@ export default function LoginPage() {
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
-
-          <button
-            type="button"
-            onClick={() => setShowHelp(true)}
-            className="w-full mt-3 text-sm text-gray-400 hover:text-[#1B2E6B] transition-colors underline underline-offset-2"
-          >
-            Need help signing in?
-          </button>
         </div>
       </div>
 

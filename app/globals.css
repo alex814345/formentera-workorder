@@ -34,23 +34,23 @@ select {
 
 @layer components {
   .btn-primary {
-    @apply w-full bg-[#1B2E6B] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-opacity;
+    @apply w-full bg-[#1B2E6B] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-all hover:bg-[#152358] hover:shadow-md;
   }
 
   .btn-secondary {
-    @apply w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-opacity;
+    @apply w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-all hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm;
   }
 
   .btn-green {
-    @apply w-full bg-[#2d6a2d] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-opacity;
+    @apply w-full bg-[#2d6a2d] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-all hover:bg-[#245a24] hover:shadow-md;
   }
 
   .btn-red {
-    @apply w-full bg-[#7a1a1a] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-opacity;
+    @apply w-full bg-[#7a1a1a] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-all hover:bg-[#651515] hover:shadow-md;
   }
 
   .btn-submit {
-    @apply w-full bg-[#1B2E6B] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply w-full bg-[#1B2E6B] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-all hover:bg-[#152358] hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none;
   }
 
   .form-label {
@@ -63,15 +63,15 @@ select {
   }
 
   .form-input {
-    @apply w-full bg-[#f3f4f6] border-0 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2E6B] focus:bg-white transition-colors;
+    @apply w-full bg-[#f3f4f6] border-0 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2E6B] focus:bg-white transition-all hover:bg-[#ebedf0] hover:shadow-sm;
   }
 
   .form-select {
-    @apply w-full bg-[#f3f4f6] border-0 rounded-lg px-4 py-3 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2E6B] focus:bg-white transition-colors appearance-none pr-10;
+    @apply w-full bg-[#f3f4f6] border-0 rounded-lg px-4 py-3 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2E6B] focus:bg-white transition-all appearance-none pr-10 hover:bg-[#ebedf0] hover:shadow-sm;
   }
 
   .form-textarea {
-    @apply w-full bg-[#f3f4f6] border-0 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2E6B] focus:bg-white transition-colors resize-none min-h-[90px];
+    @apply w-full bg-[#f3f4f6] border-0 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2E6B] focus:bg-white transition-all resize-none min-h-[90px] hover:bg-[#ebedf0] hover:shadow-sm;
   }
 
   .page-header {
@@ -87,7 +87,7 @@ select {
   }
 
   .ticket-card {
-    @apply flex items-start gap-3 p-4 border rounded-xl transition-colors cursor-pointer;
+    @apply flex items-start gap-3 p-4 border rounded-xl transition-all cursor-pointer hover:shadow-md hover:scale-[1.01] hover:border-gray-300;
   }
 
   .status-pill {

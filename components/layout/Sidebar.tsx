@@ -78,6 +78,13 @@ export default function Sidebar() {
             )}
           </div>
         </div>
+        {ROLE_PERMISSIONS[role] && (
+          <ul className="mb-3 space-y-0.5">
+            {ROLE_PERMISSIONS[role].perms.map(p => (
+              <li key={p} className="text-xs text-gray-400">• {p}</li>
+            ))}
+          </ul>
+        )}
         <button
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           onClick={handleSignOut}

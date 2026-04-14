@@ -96,7 +96,7 @@ export default function MyTicketsPage() {
       </div>
 
       {/* Filter trigger — outside scroll so dropdown isn't clipped */}
-      <div className="px-4 pt-4 pb-3 border-b border-gray-100 relative z-20">
+      <div className="px-4 pt-4 pb-3 border-b border-gray-100 relative z-20 lg:px-32">
         <button
           className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-white"
           onClick={() => setFiltersOpen(!filtersOpen)}

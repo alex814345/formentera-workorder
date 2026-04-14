@@ -15,6 +15,9 @@ node_modules/
 out/
 build/
 
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
 # Misc
 .DS_Store
 *.pem

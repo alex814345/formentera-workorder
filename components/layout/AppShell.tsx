@@ -10,7 +10,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col lg:pl-64">
-        <div className="flex-1 max-w-lg lg:max-w-none mx-auto lg:mx-0 w-full bg-white shadow-sm lg:shadow-none">
+        <div className="flex-1 max-w-lg lg:max-w-none mx-auto lg:mx-0 w-full bg-white shadow-sm lg:shadow-none overflow-x-hidden">
           <div className="pb-16 lg:pb-0">
             {children}
           </div>

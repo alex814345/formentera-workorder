@@ -6,86 +6,119 @@ type AfeOption = {
   number: string
   description: string
   type: string | null
-  wellName: string | null
-  closed: boolean
+  status: string | null
 }
 
 let cache: { data: AfeOption[]; ts: number } | null = null
 const CACHE_TTL = 10 * 60 * 1000
 
-function basicAuthHeader() {
-  const id = process.env.AFE_EXECUTE_API_KEY_ID
-  const key = process.env.AFE_EXECUTE_API_KEY
-  if (!id || !key) throw new Error('AFE Execute credentials not configured')
-  return 'Basic ' + Buffer.from(`${id}:${key}`).toString('base64')
+async function login(base: string, id: string, key: string): Promise<string> {
+  const res = await fetch(`${base}/api/Authentication/ApiKey/Login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ Id: id, Key: key }),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Login failed: ${res.status} ${body.slice(0, 300)}`)
+  }
+  const data = await res.json()
+  if (!data?.AuthenticationToken) throw new Error('No AuthenticationToken in login response')
+  return data.AuthenticationToken as string
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalize(doc: any): AfeOption | null {
-  const number = doc?.NUMBER ?? doc?.number ?? null
-  if (!number) return null
-  return {
-    number: String(number),
-    description: String(doc?.DESCRIPTION ?? doc?.description ?? ''),
-    type: doc?.CUSTOM?.AFE_TYPE ?? doc?.custom?.afe_type ?? null,
-    wellName: doc?.CUSTOM?.WELL_NAME ?? doc?.custom?.well_name ?? null,
-    closed: Boolean(doc?.CLOSED ?? doc?.closed ?? false),
+async function logout(base: string, token: string): Promise<void> {
+  try {
+    await fetch(`${base}/api/Authentication/Logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ AuthenticationToken: token }),
+      cache: 'no-store',
+    })
+  } catch {
+    // best-effort; logout is a no-op on Execute 21.1.306+
   }
+}
+
+async function fetchAfes(base: string, token: string): Promise<AfeOption[]> {
+  const res = await fetch(`${base}/api/Documents/Reporting/Execute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      AuthenticationToken: token,
+      DocumentType: 'AFE',
+      ReportType: 'AFE',
+      Columns: [
+        'AFENUMBER_DOC/AFENUMBER',
+        'DESCRIPTION',
+        'CUSTOM/AFE_TYPE',
+        'STATUS_DESC',
+      ],
+      SortColumns: [],
+      Filter: [],
+      GlobalSearch: '',
+      MaxRowCount: 1000,
+      SkipRows: 0,
+      IncludeArchived: false,
+      IncludeRawData: false,
+    }),
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Report fetch failed: ${res.status} ${body.slice(0, 300)}`)
+  }
+
+  const payload = await res.json()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = Array.isArray(payload?.Rows) ? payload.Rows : []
+
+  return rows
+    .map((r) => {
+      const data = Array.isArray(r?.Data) ? r.Data : []
+      const number = String(data[0] ?? '').trim()
+      if (!number) return null
+      return {
+        number,
+        description: String(data[1] ?? ''),
+        type: data[2] ? String(data[2]) : null,
+        status: data[3] ? String(data[3]) : null,
+      } as AfeOption
+    })
+    .filter((x): x is AfeOption => x !== null)
+    .sort((a, b) => a.number.localeCompare(b.number))
 }
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const refresh = searchParams.get('refresh') === '1'
-    const includeClosed = searchParams.get('includeClosed') === '1'
 
     if (!refresh && cache && Date.now() - cache.ts < CACHE_TTL) {
-      const data = includeClosed ? cache.data : cache.data.filter(a => !a.closed)
-      return NextResponse.json(data)
+      return NextResponse.json(cache.data)
     }
 
     const base = (process.env.AFE_EXECUTE_BASE_URL || '').replace(/\/+$/, '')
-    if (!base) throw new Error('AFE_EXECUTE_BASE_URL not configured')
+    const id = process.env.AFE_EXECUTE_API_KEY_ID
+    const key = process.env.AFE_EXECUTE_API_KEY
 
-    const url = `${base}/fetch/document/?type=AFE&limit=1000`
-    const res = await fetch(url, {
-      headers: {
-        Authorization: basicAuthHeader(),
-        Accept: 'application/json',
-      },
-      cache: 'no-store',
-    })
-
-    if (!res.ok) {
-      const body = await res.text()
-      console.error('AFE Execute fetch failed:', res.status, body.slice(0, 500))
-      return NextResponse.json(
-        { error: `AFE fetch failed: ${res.status}` },
-        { status: 502 }
-      )
+    if (!base || !id || !key) {
+      return NextResponse.json({ error: 'AFE Execute credentials not configured' }, { status: 500 })
     }
 
-    const payload = await res.json()
-    const docs: unknown[] = Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload?.documents)
-      ? payload.documents
-      : Array.isArray(payload?.data)
-      ? payload.data
-      : Array.isArray(payload?.results)
-      ? payload.results
-      : []
-
-    const normalized = docs
-      .map(normalize)
-      .filter((x): x is AfeOption => x !== null)
-      .sort((a, b) => a.number.localeCompare(b.number))
-
-    cache = { data: normalized, ts: Date.now() }
-    const data = includeClosed ? normalized : normalized.filter(a => !a.closed)
-    return NextResponse.json(data)
+    const token = await login(base, id, key)
+    try {
+      const afes = await fetchAfes(base, token)
+      cache = { data: afes, ts: Date.now() }
+      return NextResponse.json(afes)
+    } finally {
+      await logout(base, token)
+    }
   } catch (error) {
     console.error('AFE route error:', error)
-    return NextResponse.json({ error: 'Failed to fetch AFE list' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Failed to fetch AFE list'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

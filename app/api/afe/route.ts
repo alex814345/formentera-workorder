@@ -62,6 +62,11 @@ async function fetchAfes(base: string, token: string): Promise<AfeOption[]> {
           Operator: '=',
           Value: 'Fully Approved',
         },
+        {
+          Column: 'CUSTOM/OPERATOR_STATUS',
+          Operator: '=',
+          Value: 'Operated',
+        },
       ],
       GlobalSearch: '',
       MaxRowCount: 1000,

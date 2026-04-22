@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
         date_completed: body.date_completed || null,
         final_status: body.final_status || null,
         Work_Order_Type: body.Work_Order_Type || null,
+        AFE_Number: body.AFE_Number || null,
         Priority_of_Issue: body.Priority_of_Issue || null,
         created_by: body.created_by,
         created_at: new Date().toISOString(),

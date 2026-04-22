@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { ArrowLeft, ChevronDown, Camera, X } from 'lucide-react'
 import Accordion from '@/components/ui/Accordion'
 import LocationDropdowns from '@/components/forms/LocationDropdowns'
+import SearchableSelect from '@/components/ui/SearchableSelect'
 import { useAuth } from '@/components/AuthProvider'
 import { formatDate, formatDateShort, DEPARTMENTS, LOCATION_TYPES, WORK_ORDER_DECISIONS, FINAL_STATUSES, PRIORITY_OPTIONS } from '@/lib/utils'
 import CommentsSection from '@/components/ui/CommentsSection'
@@ -29,6 +30,7 @@ export default function MaintenanceTicketPage() {
   const [vendors, setVendors] = useState<string[]>([])
   const [equipmentTypes, setEquipmentTypes] = useState<{ id: string; equipment_type: string }[]>([])
   const [equipment, setEquipment] = useState<{ id: number; equip_name: string }[]>([])
+  const [afes, setAfes] = useState<{ number: string; description: string }[]>([])
 
   // Initial Report form state
   const [irForm, setIrForm] = useState<Record<string, string | boolean>>({})
@@ -79,6 +81,7 @@ export default function MaintenanceTicketPage() {
       final_status: rc.final_status || '',
       start_date: rc.start_date || new Date().toISOString(),
       Work_Order_Type: rc.Work_Order_Type || '',
+      AFE_Number: rc.AFE_Number || '',
       Priority_of_Issue: rc.Priority_of_Issue || 'Low',
       repair_details: rc.repair_details || '',
       date_completed: rc.date_completed || '',
@@ -128,6 +131,15 @@ export default function MaintenanceTicketPage() {
         .then(r => r.json()).then(setEquipment)
     }
   }, [irForm.Equipment_Type, irForm.Location_Type])
+
+  useEffect(() => {
+    const wot = String(repForm.Work_Order_Type || '')
+    if (wot.startsWith('AFE') && afes.length === 0) {
+      fetch('/api/afe').then(r => r.json()).then(data => {
+        if (Array.isArray(data)) setAfes(data)
+      }).catch(() => {})
+    }
+  }, [repForm.Work_Order_Type, afes.length])
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -444,6 +456,9 @@ export default function MaintenanceTicketPage() {
                   ['Final Status', repairs.final_status],
                   ['Start Date', formatDateShort(repairs.start_date as string)],
                   ['Work Order Type', repairs.Work_Order_Type],
+                  ...(String(repairs.Work_Order_Type || '').startsWith('AFE')
+                    ? [['AFE Number', repairs.AFE_Number] as [string, unknown]]
+                    : []),
                   ['Priority of Issue', repairs.Priority_of_Issue],
                   ['Repair Details', repairs.repair_details],
                 ].map(([label, value]) => (
@@ -946,13 +961,35 @@ export default function MaintenanceTicketPage() {
               <div>
                 <label className="form-label form-label-required">Work Order Type</label>
                 <div className="relative">
-                  <select className="form-select" value={repForm.Work_Order_Type as string} onChange={e => setRep('Work_Order_Type', e.target.value)} disabled={isReadOnly}>
+                  <select className="form-select" value={repForm.Work_Order_Type as string} onChange={e => {
+                    setRep('Work_Order_Type', e.target.value)
+                    if (!e.target.value.startsWith('AFE')) setRep('AFE_Number', '')
+                  }} disabled={isReadOnly}>
                     <option value="">Select Work Order Type</option>
                     {['AFE - Workover', 'AFE - Capital', 'LOE'].map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
               </div>
+
+              {String(repForm.Work_Order_Type || '').startsWith('AFE') && (() => {
+                const afeOptions = afes.map(a => `${a.number} — ${a.description}`)
+                const currentNumber = String(repForm.AFE_Number || '')
+                const match = afes.find(a => a.number === currentNumber)
+                const currentLabel = match ? `${match.number} — ${match.description}` : currentNumber
+                return (
+                  <div>
+                    <label className="form-label form-label-required">AFE Number</label>
+                    <SearchableSelect
+                      value={currentLabel}
+                      options={afeOptions}
+                      placeholder={afes.length === 0 ? 'Loading AFEs…' : 'Select AFE'}
+                      onChange={v => setRep('AFE_Number', v.split(' — ')[0] || '')}
+                      disabled={isReadOnly || afes.length === 0}
+                    />
+                  </div>
+                )
+              })()}
 
               {/* Priority radio buttons */}
               <div>
@@ -1139,6 +1176,7 @@ export default function MaintenanceTicketPage() {
                 <button className="btn-submit" onClick={saveRepairs} disabled={
                   saving ||
                   !repForm.Work_Order_Type ||
+                  (String(repForm.Work_Order_Type || '').startsWith('AFE') && !repForm.AFE_Number) ||
                   !repForm.final_status ||
                   !String(repForm.repair_details || '').trim() ||
                   (vendorRows.every(r => !r.cost) && repForm.final_status !== 'Repaired - Awaiting Final Cost')

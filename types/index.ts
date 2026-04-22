@@ -72,6 +72,7 @@ export interface RepairsCloseout {
   created_by?: string
   updated_at?: string
   Work_Order_Type?: string
+  AFE_Number?: string
   Priority_of_Issue?: PriorityOfIssue
 }
 

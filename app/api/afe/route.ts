@@ -56,7 +56,13 @@ async function fetchAfes(base: string, token: string): Promise<AfeOption[]> {
         'STATUS_DESC',
       ],
       SortColumns: [],
-      Filter: [],
+      Filter: [
+        {
+          Column: 'STATUS_DESC',
+          Operator: '=',
+          Value: 'Fully Approved',
+        },
+      ],
       GlobalSearch: '',
       MaxRowCount: 1000,
       SkipRows: 0,

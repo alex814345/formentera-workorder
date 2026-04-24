@@ -20,7 +20,7 @@ function tokenize(q: string): string[] {
     .toLowerCase()
     .split(/\s+/)
     .map(t => t.replace(/[^a-z0-9]+/g, ''))
-    .filter(t => t.length >= 2)
+    .filter(t => t.length >= 1)
     .slice(0, 10)
 }
 
@@ -45,9 +45,13 @@ export async function GET(req: Request) {
     ]
     const binds: string[] = []
 
-    for (const t of tokens) {
-      whereParts.push('SEARCH_BLOB ILIKE ?')
-      binds.push(`%${t}%`)
+    if (tokens.length > 0) {
+      // Snowflake REGEXP_LIKE is implicitly anchored — wrap with .* on both sides.
+      // Tokens joined with .* enforce order, so "tubb j b b 03" needs those
+      // chars in that sequence — filters out #103, #203 etc.
+      const pattern = '.*' + tokens.join('.*') + '.*'
+      whereParts.push('REGEXP_LIKE(SEARCH_BLOB, ?, \'i\')')
+      binds.push(pattern)
     }
     if (assetFilter) {
       whereParts.push('"Asset" = ?')

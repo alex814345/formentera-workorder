@@ -995,15 +995,19 @@ export default function MaintenanceTicketPage() {
 
               {String(repForm.Work_Order_Type || '').startsWith('AFE') && (() => {
                 const unitId = ticket.Well_UNITID as string | undefined
+                const wellScopeLoading = !!unitId && (wellAfeNumbers === null || afesAll.length === 0)
                 const canScope = !!unitId && wellAfeNumbers !== null && wellAfeNumbers.length > 0
                 const scoped = canScope && !showAllAfes
-                const visibleAfes = scoped
-                  ? afesAll.filter(a => wellAfeNumbers!.includes(a.number))
-                  : afes
+                const visibleAfes = wellScopeLoading
+                  ? []
+                  : scoped
+                    ? afesAll.filter(a => wellAfeNumbers!.includes(a.number))
+                    : afes
                 const afeOptions = visibleAfes.map(a => `${a.number} — ${a.description}`)
                 const currentNumber = String(repForm.AFE_Number || '')
                 const match = [...afes, ...afesAll].find(a => a.number === currentNumber)
                 const currentLabel = match ? `${match.number} — ${match.description}` : currentNumber
+                const loading = wellScopeLoading || (scoped ? afesAll.length === 0 : afes.length === 0)
                 return (
                   <div>
                     <div className="flex items-baseline justify-between">
@@ -1021,9 +1025,9 @@ export default function MaintenanceTicketPage() {
                     <SearchableSelect
                       value={currentLabel}
                       options={afeOptions}
-                      placeholder={visibleAfes.length === 0 ? 'Loading AFEs…' : 'Select AFE'}
+                      placeholder={loading ? 'Loading AFEs…' : 'Select AFE'}
                       onChange={v => setRep('AFE_Number', v.split(' — ')[0] || '')}
-                      disabled={isReadOnly || (scoped ? afesAll.length === 0 : afes.length === 0)}
+                      disabled={isReadOnly || loading}
                     />
                     {scoped && (
                       <p className="text-xs text-gray-500 mt-1">

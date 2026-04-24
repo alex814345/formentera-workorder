@@ -32,7 +32,7 @@ export default function MaintenanceTicketPage() {
   const [equipment, setEquipment] = useState<{ id: number; equip_name: string }[]>([])
   const [afes, setAfes] = useState<{ number: string; description: string }[]>([])
   const [afesAll, setAfesAll] = useState<{ number: string; description: string }[]>([])
-  const [wellAfeNumbers, setWellAfeNumbers] = useState<string[] | null>(null)
+  const [wellAfes, setWellAfes] = useState<{ number: string; jobCategory: string }[] | null>(null)
   const [showAllAfes, setShowAllAfes] = useState(false)
 
   // Initial Report form state
@@ -85,6 +85,7 @@ export default function MaintenanceTicketPage() {
       start_date: rc.start_date || new Date().toISOString(),
       Work_Order_Type: rc.Work_Order_Type || '',
       AFE_Number: rc.AFE_Number || '',
+      Job_Category: rc.Job_Category || '',
       Priority_of_Issue: rc.Priority_of_Issue || 'Low',
       repair_details: rc.repair_details || '',
       date_completed: rc.date_completed || '',
@@ -148,10 +149,10 @@ export default function MaintenanceTicketPage() {
     const wot = String(repForm.Work_Order_Type || '')
     const unitId = (data?.ticket as Record<string, unknown> | undefined)?.Well_UNITID as string | undefined
     if (!wot.startsWith('AFE') || !unitId) return
-    if (wellAfeNumbers === null) {
+    if (wellAfes === null) {
       fetch(`/api/wells/${encodeURIComponent(unitId)}/afes`)
         .then(r => r.json())
-        .then(d => { if (Array.isArray(d)) setWellAfeNumbers(d) })
+        .then(d => { if (Array.isArray(d)) setWellAfes(d) })
         .catch(() => {})
     }
     if (afesAll.length === 0) {
@@ -160,7 +161,16 @@ export default function MaintenanceTicketPage() {
         .then(d => { if (Array.isArray(d)) setAfesAll(d) })
         .catch(() => {})
     }
-  }, [repForm.Work_Order_Type, data, wellAfeNumbers, afesAll.length])
+  }, [repForm.Work_Order_Type, data, wellAfes, afesAll.length])
+
+  // Auto-fill Job_Category when wellAfes lands and AFE_Number is set but category isn't
+  useEffect(() => {
+    if (!wellAfes) return
+    const afeNumber = String(repForm.AFE_Number || '')
+    if (!afeNumber || repForm.Job_Category) return
+    const match = wellAfes.find(w => w.number === afeNumber)
+    if (match?.jobCategory) setRep('Job_Category', match.jobCategory)
+  }, [wellAfes, repForm.AFE_Number, repForm.Job_Category])
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -478,7 +488,10 @@ export default function MaintenanceTicketPage() {
                   ['Start Date', formatDateShort(repairs.start_date as string)],
                   ['Work Order Type', repairs.Work_Order_Type],
                   ...(String(repairs.Work_Order_Type || '').startsWith('AFE')
-                    ? [['AFE Number', repairs.AFE_Number] as [string, unknown]]
+                    ? [
+                        ['AFE Number', repairs.AFE_Number] as [string, unknown],
+                        ['Job Category', repairs.Job_Category] as [string, unknown],
+                      ]
                     : []),
                   ['Priority of Issue', repairs.Priority_of_Issue],
                   ['Repair Details', repairs.repair_details],
@@ -984,7 +997,10 @@ export default function MaintenanceTicketPage() {
                 <div className="relative">
                   <select className="form-select" value={repForm.Work_Order_Type as string} onChange={e => {
                     setRep('Work_Order_Type', e.target.value)
-                    if (!e.target.value.startsWith('AFE')) setRep('AFE_Number', '')
+                    if (!e.target.value.startsWith('AFE')) {
+                      setRep('AFE_Number', '')
+                      setRep('Job_Category', '')
+                    }
                   }} disabled={isReadOnly}>
                     <option value="">Select Work Order Type</option>
                     {['AFE - Workover', 'AFE - Capital', 'LOE'].map(t => <option key={t} value={t}>{t}</option>)}
@@ -995,7 +1011,8 @@ export default function MaintenanceTicketPage() {
 
               {String(repForm.Work_Order_Type || '').startsWith('AFE') && (() => {
                 const unitId = ticket.Well_UNITID as string | undefined
-                const wellScopeLoading = !!unitId && (wellAfeNumbers === null || afesAll.length === 0)
+                const wellAfeNumbers = wellAfes?.map(w => w.number) ?? null
+                const wellScopeLoading = !!unitId && (wellAfes === null || afesAll.length === 0)
                 const canScope = !!unitId && wellAfeNumbers !== null && wellAfeNumbers.length > 0
                 const scoped = canScope && !showAllAfes
                 const visibleAfes = wellScopeLoading
@@ -1008,33 +1025,52 @@ export default function MaintenanceTicketPage() {
                 const match = [...afes, ...afesAll].find(a => a.number === currentNumber)
                 const currentLabel = match ? `${match.number} — ${match.description}` : currentNumber
                 const loading = wellScopeLoading || (scoped ? afesAll.length === 0 : afes.length === 0)
+                const jobCategory = String(repForm.Job_Category || '')
                 return (
-                  <div>
-                    <div className="flex items-baseline justify-between">
-                      <label className="form-label form-label-required">AFE Number</label>
-                      {canScope && !isReadOnly && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAllAfes(v => !v)}
-                          className="text-xs text-[#1B2E6B] underline underline-offset-2"
-                        >
-                          {scoped ? 'Show all AFEs' : 'Show only this well’s AFEs'}
-                        </button>
+                  <>
+                    <div>
+                      <div className="flex items-baseline justify-between">
+                        <label className="form-label form-label-required">AFE Number</label>
+                        {canScope && !isReadOnly && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllAfes(v => !v)}
+                            className="text-xs text-[#1B2E6B] underline underline-offset-2"
+                          >
+                            {scoped ? 'Show all AFEs' : 'Show only this well’s AFEs'}
+                          </button>
+                        )}
+                      </div>
+                      <SearchableSelect
+                        value={currentLabel}
+                        options={afeOptions}
+                        placeholder={loading ? 'Loading AFEs…' : 'Select AFE'}
+                        onChange={v => {
+                          const picked = v.split(' — ')[0] || ''
+                          setRep('AFE_Number', picked)
+                          const cat = wellAfes?.find(w => w.number === picked)?.jobCategory ?? ''
+                          setRep('Job_Category', cat)
+                        }}
+                        disabled={isReadOnly || loading}
+                      />
+                      {scoped && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Showing {visibleAfes.length} AFE{visibleAfes.length === 1 ? '' : 's'} tied to this well
+                        </p>
                       )}
                     </div>
-                    <SearchableSelect
-                      value={currentLabel}
-                      options={afeOptions}
-                      placeholder={loading ? 'Loading AFEs…' : 'Select AFE'}
-                      onChange={v => setRep('AFE_Number', v.split(' — ')[0] || '')}
-                      disabled={isReadOnly || loading}
-                    />
-                    {scoped && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Showing {visibleAfes.length} AFE{visibleAfes.length === 1 ? '' : 's'} tied to this well
-                      </p>
-                    )}
-                  </div>
+                    <div>
+                      <label className="form-label">Job Category</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={jobCategory}
+                        placeholder={currentNumber ? '—' : 'Select an AFE first'}
+                        readOnly
+                        disabled
+                      />
+                    </div>
+                  </>
                 )
               })()}
 

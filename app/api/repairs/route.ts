@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
         final_status: body.final_status || null,
         Work_Order_Type: body.Work_Order_Type || null,
         AFE_Number: body.AFE_Number || null,
+        Job_Category: body.Job_Category || null,
         Priority_of_Issue: body.Priority_of_Issue || null,
         created_by: body.created_by,
         created_at: new Date().toISOString(),

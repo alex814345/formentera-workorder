@@ -101,7 +101,8 @@ export default function MaintenanceTicketPage() {
         rows.push({ vendor: vd[vKey] as string, cost: pending ? '' : String(cost), pending })
       }
     }
-    if (rows.length === 0) rows.push({ vendor: '', cost: '', pending: false })
+    const awaitingFinalCost = rc.final_status === 'Repaired - Awaiting Final Cost'
+    if (rows.length === 0) rows.push({ vendor: '', cost: '', pending: awaitingFinalCost })
     setVendorRows(rows)
   }
 
@@ -162,6 +163,12 @@ export default function MaintenanceTicketPage() {
         .catch(() => {})
     }
   }, [repForm.Work_Order_Type, data, wellAfes, afesAll.length])
+
+  // When Final Status switches to Awaiting Final Cost, default empty-cost vendor rows to pending
+  useEffect(() => {
+    if (repForm.final_status !== 'Repaired - Awaiting Final Cost') return
+    setVendorRows(rows => rows.map(r => (!r.cost && !r.pending ? { ...r, pending: true } : r)))
+  }, [repForm.final_status])
 
   // Auto-fill Job_Category and Job_Type_Primary when wellAfes lands and AFE_Number is set
   useEffect(() => {
@@ -1240,7 +1247,7 @@ export default function MaintenanceTicketPage() {
               {!isReadOnly && vendorRows.length < 7 && (
                 <button
                   className="btn-green"
-                  onClick={() => setVendorRows([...vendorRows, { vendor: '', cost: '', pending: false }])}
+                  onClick={() => setVendorRows([...vendorRows, { vendor: '', cost: '', pending: repForm.final_status === 'Repaired - Awaiting Final Cost' }])}
                 >
                   Add Vendor
                 </button>

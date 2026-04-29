@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChevronRight } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import {
@@ -15,6 +16,13 @@ const KPI_GRID = [
 ]
 
 const KPI_CLOSED = { key: 'Closed', label: 'Closed', bg: 'bg-green-50', text: 'text-green-800', dot: 'bg-emerald-500' }
+
+const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
+  'Open':          { bg: 'bg-blue-50',   text: 'text-[#1B2E6B]', dot: 'bg-[#1B2E6B]' },
+  'In Progress':   { bg: 'bg-amber-50',  text: 'text-amber-800', dot: 'bg-amber-400' },
+  'Backlogged':    { bg: 'bg-gray-100',  text: 'text-gray-700',  dot: 'bg-gray-400' },
+  'Awaiting Cost': { bg: 'bg-orange-50', text: 'text-orange-800', dot: 'bg-orange-400' },
+}
 
 type TrendPreset = 'this-week' | 'last-week' | 'this-month' | 'last-month' | 'custom'
 
@@ -33,9 +41,17 @@ function toLocalISO(d: Date) {
   return `${y}-${m}-${day}`
 }
 
+interface AgedTicket {
+  ticket_id: number
+  field: string
+  equipment: string
+  status: string
+  days_open: number
+}
+
 interface KPIData {
   statusCounts: Record<string, number>
-  deptCounts: { dept: string; count: number }[]
+  agedTickets: AgedTicket[]
   dailyTrend: { date: string; label: string; count: number }[]
   total: number
 }
@@ -135,8 +151,7 @@ export default function KPIDashboard() {
     )
   }
 
-  const { statusCounts, deptCounts, dailyTrend } = data
-  const maxDept = deptCounts[0]?.count || 1
+  const { statusCounts, agedTickets, dailyTrend } = data
 
   function goToStatus(status: string) {
     router.push(`/maintenance?status=${encodeURIComponent(status)}`)
@@ -255,27 +270,44 @@ export default function KPIDashboard() {
         </ResponsiveContainer>
       </div>
 
-      {/* Department breakdown */}
-      {deptCounts.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">By Department</h3>
-          <div className="space-y-2.5">
-            {deptCounts.map(({ dept, count }) => (
-              <div
-                key={dept}
-                className="flex items-center gap-2 cursor-pointer hover:bg-blue-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
-                onClick={() => router.push(`/maintenance?department=${encodeURIComponent(dept)}`)}
-              >
-                <span title={dept} className="text-xs text-gray-600 w-28 truncate shrink-0">{dept}</span>
-                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#1B2E6B] rounded-full transition-all"
-                    style={{ width: `${Math.round((count / maxDept) * 100)}%` }}
-                  />
+      {/* Needs Attention — top oldest open tickets */}
+      {agedTickets && agedTickets.length > 0 && (
+        <div className="bg-white rounded-xl border border-red-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-700">Needs Attention</h3>
+            <span className="text-[10px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">
+              {agedTickets.length} oldest open
+            </span>
+          </div>
+          <div className="space-y-2">
+            {agedTickets.map(t => {
+              const daysColor = t.days_open > 30 ? 'bg-red-50 text-red-700' : t.days_open > 14 ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+              const c = STATUS_STYLE[t.status] || STATUS_STYLE['Open']
+              return (
+                <div
+                  key={t.ticket_id}
+                  className="flex items-center gap-3 p-2.5 rounded-xl border border-gray-100 bg-gray-50/50 cursor-pointer hover:bg-blue-50/50 transition-colors active:scale-[0.99]"
+                  onClick={() => router.push(`/maintenance/${t.ticket_id}`)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-xs font-bold text-[#1B2E6B]">#{t.ticket_id}</span>
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium ${c.bg} ${c.text}`}>
+                        <span className={`w-1 h-1 rounded-full shrink-0 ${c.dot}`} />
+                        {t.status}
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-gray-700 truncate">{t.equipment || '—'}</p>
+                    {t.field && <p className="text-[10px] text-gray-400 truncate">{t.field}</p>}
+                  </div>
+                  <div className={`shrink-0 px-2 py-1 rounded-lg text-center ${daysColor}`}>
+                    <p className="text-sm font-bold leading-tight">{t.days_open}</p>
+                    <p className="text-[9px] leading-tight">days</p>
+                  </div>
+                  <ChevronRight size={14} className="text-gray-300 shrink-0" />
                 </div>
-                <span className="text-xs font-semibold text-gray-800 w-5 text-right">{count}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

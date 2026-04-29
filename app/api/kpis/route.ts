@@ -17,12 +17,12 @@ export async function GET(req: NextRequest) {
 
     // Paginate to get all rows (Supabase defaults to 1000 row limit)
     const BATCH = 1000
-    const rows: { ticket_status: string; department: string; issue_date: string; equipment_name: string }[] = []
+    const rows: { ticket_id: number; ticket_status: string; field: string; issue_date: string; equipment_name: string }[] = []
     let from = 0
     while (true) {
       let q = db
         .from('workorder_ticket_summary')
-        .select('ticket_status, department, issue_date, equipment_name')
+        .select('ticket_id, ticket_status, field, issue_date, equipment_name')
         .order('ticket_id', { ascending: true })
         .range(from, from + BATCH - 1)
       if (userAssets.length > 0) q = q.in('asset', userAssets)
@@ -40,15 +40,20 @@ export async function GET(req: NextRequest) {
       statusCounts[s] = (statusCounts[s] || 0) + 1
     }
 
-    // Department counts (top 6 by volume)
-    const deptMap: Record<string, number> = {}
-    for (const r of rows) {
-      if (r.department) deptMap[r.department] = (deptMap[r.department] || 0) + 1
-    }
-    const deptCounts = Object.entries(deptMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([dept, count]) => ({ dept, count }))
+    // Aged tickets — top 10 oldest unresolved (mirrors Analysis page)
+    const OPEN_STATUSES = ['Open', 'In Progress', 'Backlogged', 'Awaiting Cost']
+    const nowMs = Date.now()
+    const agedTickets = rows
+      .filter(r => OPEN_STATUSES.includes(r.ticket_status) && r.ticket_id > 700)
+      .map(r => ({
+        ticket_id: r.ticket_id,
+        field: r.field || '',
+        equipment: r.equipment_name || 'Unknown',
+        status: r.ticket_status,
+        days_open: Math.floor((nowMs - new Date(r.issue_date).getTime()) / 86_400_000),
+      }))
+      .sort((a, b) => b.days_open - a.days_open)
+      .slice(0, 10)
 
     // Daily trend — defaults to Mon through Sun of current week, or honors start/end if provided
     let rangeStart: Date
@@ -84,7 +89,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       statusCounts,
-      deptCounts,
+      agedTickets,
       dailyTrend: trend,
       total: rows.length,
     }, {

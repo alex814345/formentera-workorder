@@ -48,16 +48,6 @@ export async function GET(req: NextRequest) {
       .slice(0, 6)
       .map(([dept, count]) => ({ dept, count }))
 
-    // Equipment counts (top 8 by volume)
-    const equipMap: Record<string, number> = {}
-    for (const r of rows) {
-      if (r.equipment_name) equipMap[r.equipment_name] = (equipMap[r.equipment_name] || 0) + 1
-    }
-    const equipCounts = Object.entries(equipMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([equip, count]) => ({ equip, count }))
-
     // Daily trend — Mon through Sun of current week
     const today = new Date()
     const monday = new Date(today)
@@ -79,7 +69,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       statusCounts,
       deptCounts,
-      equipCounts,
       dailyTrend: trend,
       total: rows.length,
     }, {

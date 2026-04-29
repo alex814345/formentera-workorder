@@ -19,7 +19,6 @@ const KPI_CLOSED = { key: 'Closed', label: 'Closed', bg: 'bg-green-50', text: 't
 interface KPIData {
   statusCounts: Record<string, number>
   deptCounts: { dept: string; count: number }[]
-  equipCounts: { equip: string; count: number }[]
   dailyTrend: { date: string; label: string; count: number }[]
   total: number
 }
@@ -84,9 +83,8 @@ export default function KPIDashboard() {
     )
   }
 
-  const { statusCounts, deptCounts, equipCounts, dailyTrend } = data
+  const { statusCounts, deptCounts, dailyTrend } = data
   const maxDept = deptCounts[0]?.count || 1
-  const maxEquip = equipCounts[0]?.count || 1
 
   function goToStatus(status: string) {
     router.push(`/maintenance?status=${encodeURIComponent(status)}`)
@@ -167,31 +165,6 @@ export default function KPIDashboard() {
           </BarChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Equipment breakdown */}
-      {equipCounts.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Most Reported Equipment</h3>
-          <div className="space-y-2.5">
-            {equipCounts.map(({ equip, count }) => (
-              <div
-                key={equip}
-                className="flex items-center gap-2 cursor-pointer hover:bg-blue-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
-                onClick={() => router.push(`/maintenance?equipment=${encodeURIComponent(equip)}`)}
-              >
-                <span title={equip} className="text-xs text-gray-600 w-32 truncate shrink-0">{equip}</span>
-                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#1B2E6B] rounded-full transition-all"
-                    style={{ width: `${Math.round((count / maxEquip) * 100)}%` }}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-gray-800 w-6 text-right">{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Department breakdown */}
       {deptCounts.length > 0 && (

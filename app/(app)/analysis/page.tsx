@@ -130,8 +130,12 @@ export default function AnalysisPage() {
   const [equipChartField, setEquipChartField] = useState('All')
   const [equipChartStatus, setEquipChartStatus] = useState('Closed')
   const [equipChartCategory, setEquipChartCategory] = useState('All')
+  const [equipChartYear, setEquipChartYear] = useState('All')
+  const [equipChartMonth, setEquipChartMonth] = useState('All')
   // Slicer state for the Cost by Ticket Status chart
   const [statusChartAsset, setStatusChartAsset] = useState('All')
+  const [statusChartYear, setStatusChartYear] = useState('All')
+  const [statusChartMonth, setStatusChartMonth] = useState('All')
 
   // Date range filter
   const [datePreset, setDatePreset] = useState<'all' | 'week' | 'month' | 'lastmonth' | 'ytd' | 'custom'>('all')
@@ -625,22 +629,27 @@ export default function AnalysisPage() {
               </div>
             )}
 
-            {/* Cost by Equipment — slicer-driven (Asset / Field / Status / Equipment Category) */}
+            {/* Cost by Equipment — slicer-driven (Asset / Field / Status / Equipment Category / Year / Month) */}
             {aggData.costMatrix && aggData.costMatrix.length > 0 && (() => {
               const matrix = aggData.costMatrix
+              const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+              const monthOptsAll = ['All', ...Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))]
+
               const assetOpts = ['All', ...Array.from(new Set(matrix.map(r => r.asset).filter(Boolean))).sort()]
               const fieldOpts = ['All', ...Array.from(new Set(matrix.filter(r => equipChartAsset === 'All' || r.asset === equipChartAsset).map(r => r.field).filter(Boolean))).sort()]
               const statusOpts = ['All', ...STATUSES]
               const categoryOpts = ['All', ...Array.from(new Set(matrix.map(r => r.equipment_type).filter(Boolean))).sort()]
+              const yearOpts = ['All', ...Array.from(new Set(matrix.map(r => r.month.slice(0, 4)).filter(Boolean))).sort()]
 
               const filtered = matrix.filter(r =>
                 (equipChartAsset === 'All' || r.asset === equipChartAsset) &&
                 (equipChartField === 'All' || r.field === equipChartField) &&
                 (equipChartStatus === 'All' || r.ticket_status === equipChartStatus) &&
-                (equipChartCategory === 'All' || r.equipment_type === equipChartCategory)
+                (equipChartCategory === 'All' || r.equipment_type === equipChartCategory) &&
+                (equipChartYear === 'All' || r.month.slice(0, 4) === equipChartYear) &&
+                (equipChartMonth === 'All' || r.month.slice(5, 7) === equipChartMonth)
               )
 
-              // Pivot: month → equipment → cost
               const monthMap = new Map<string, Record<string, number>>()
               const equipTotals = new Map<string, number>()
               for (const r of filtered) {
@@ -650,8 +659,6 @@ export default function AnalysisPage() {
                 monthMap.set(r.month, bucket)
                 equipTotals.set(eq, (equipTotals.get(eq) || 0) + r.est_cost)
               }
-              // Top 8 equipment by total cost — keeps the chart legible when no
-              // category is picked. Series order follows total cost, descending.
               const series = Array.from(equipTotals.entries())
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 8)
@@ -667,7 +674,7 @@ export default function AnalysisPage() {
                 return row
               })
 
-              const Slicer = ({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) => (
+              const Slicer = ({ label, value, options, optionLabel, onChange }: { label: string; value: string; options: string[]; optionLabel?: (v: string) => string; onChange: (v: string) => void }) => (
                 <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">{label}</span>
                   <select
@@ -675,7 +682,7 @@ export default function AnalysisPage() {
                     value={value}
                     onChange={e => onChange(e.target.value)}
                   >
-                    {options.map(o => <option key={o} value={o}>{o}</option>)}
+                    {options.map(o => <option key={o} value={o}>{optionLabel ? optionLabel(o) : o}</option>)}
                   </select>
                 </div>
               )
@@ -683,23 +690,27 @@ export default function AnalysisPage() {
               return (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Cost by Equipment</h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-                    <Slicer label="Asset" value={equipChartAsset} options={assetOpts} onChange={v => { setEquipChartAsset(v); setEquipChartField('All') }} />
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
+                    {assets.length !== 1 && (
+                      <Slicer label="Asset" value={equipChartAsset} options={assetOpts} onChange={v => { setEquipChartAsset(v); setEquipChartField('All') }} />
+                    )}
                     <Slicer label="Field" value={equipChartField} options={fieldOpts} onChange={setEquipChartField} />
                     <Slicer label="Ticket Status" value={equipChartStatus} options={statusOpts} onChange={setEquipChartStatus} />
                     <Slicer label="Equipment Catg." value={equipChartCategory} options={categoryOpts} onChange={setEquipChartCategory} />
+                    <Slicer label="Year (Issue Date)" value={equipChartYear} options={yearOpts} onChange={setEquipChartYear} />
+                    <Slicer label="Month (Issue Date)" value={equipChartMonth} options={monthOptsAll} optionLabel={o => o === 'All' ? 'All' : MONTH_NAMES[parseInt(o, 10) - 1]} onChange={setEquipChartMonth} />
                   </div>
                   {data.length === 0 ? (
                     <p className="text-xs text-gray-400 text-center py-8">No data for the selected filters</p>
                   ) : (
                     <>
-                      <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={data} margin={{ top: 4, right: 4, left: -8, bottom: 60 }}>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={data} margin={{ top: 4, right: 4, left: -8, bottom: 30 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                           <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" interval={0} />
                           <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} />
                           <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
-                          <Legend wrapperStyle={{ fontSize: 10, paddingTop: 55 }} />
+                          <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
                           {series.map(s => (
                             <Bar key={s.key} dataKey={s.key} name={s.key} fill={s.color} radius={[4, 4, 0, 0]} />
                           ))}
@@ -716,16 +727,21 @@ export default function AnalysisPage() {
               )
             })()}
 
-            {/* Cost by Ticket Status — slicer-driven (Asset only) */}
+            {/* Cost by Ticket Status — slicer-driven (Asset / Year / Month) */}
             {aggData.costMatrix && aggData.costMatrix.length > 0 && (() => {
               const matrix = aggData.costMatrix
+              const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+              const monthOptsAll = ['All', ...Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))]
+
               const assetOpts = ['All', ...Array.from(new Set(matrix.map(r => r.asset).filter(Boolean))).sort()]
+              const yearOpts = ['All', ...Array.from(new Set(matrix.map(r => r.month.slice(0, 4)).filter(Boolean))).sort()]
 
               const filtered = matrix.filter(r =>
-                statusChartAsset === 'All' || r.asset === statusChartAsset
+                (statusChartAsset === 'All' || r.asset === statusChartAsset) &&
+                (statusChartYear === 'All' || r.month.slice(0, 4) === statusChartYear) &&
+                (statusChartMonth === 'All' || r.month.slice(5, 7) === statusChartMonth)
               )
 
-              // Pivot: month → status → cost
               const monthMap = new Map<string, Record<string, number>>()
               for (const r of filtered) {
                 const status = r.ticket_status || 'Open'
@@ -750,31 +766,39 @@ export default function AnalysisPage() {
                 return row
               })
 
+              const Slicer = ({ label, value, options, optionLabel, onChange }: { label: string; value: string; options: string[]; optionLabel?: (v: string) => string; onChange: (v: string) => void }) => (
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">{label}</span>
+                  <select
+                    className="text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#1B2E6B] truncate"
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                  >
+                    {options.map(o => <option key={o} value={o}>{optionLabel ? optionLabel(o) : o}</option>)}
+                  </select>
+                </div>
+              )
+
               return (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Cost by Ticket Status</h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Asset</span>
-                      <select
-                        className="text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#1B2E6B] truncate"
-                        value={statusChartAsset}
-                        onChange={e => setStatusChartAsset(e.target.value)}
-                      >
-                        {assetOpts.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    </div>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
+                    {assets.length !== 1 && (
+                      <Slicer label="Asset" value={statusChartAsset} options={assetOpts} onChange={setStatusChartAsset} />
+                    )}
+                    <Slicer label="Year (Issue Date)" value={statusChartYear} options={yearOpts} onChange={setStatusChartYear} />
+                    <Slicer label="Month (Issue Date)" value={statusChartMonth} options={monthOptsAll} optionLabel={o => o === 'All' ? 'All' : MONTH_NAMES[parseInt(o, 10) - 1]} onChange={setStatusChartMonth} />
                   </div>
                   {data.length === 0 ? (
                     <p className="text-xs text-gray-400 text-center py-8">No data for the selected filters</p>
                   ) : (
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={data} margin={{ top: 4, right: 4, left: -8, bottom: 60 }}>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={data} margin={{ top: 4, right: 4, left: -8, bottom: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                         <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" interval={0} />
                         <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} />
                         <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
-                        <Legend wrapperStyle={{ fontSize: 10, paddingTop: 55 }} />
+                        <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
                         {STATUSES.map(s => (
                           <Bar key={s} dataKey={s} name={s} fill={STATUS_HEX[s]} radius={[4, 4, 0, 0]} />
                         ))}

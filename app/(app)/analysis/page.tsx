@@ -705,10 +705,10 @@ export default function AnalysisPage() {
                   ) : (
                     <>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={data} margin={{ top: 4, right: 4, left: -8, bottom: 30 }}>
+                        <BarChart data={data} margin={{ top: 4, right: 4, left: 12, bottom: 30 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                           <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" interval={0} />
-                          <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} />
+                          <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} label={{ value: 'Sum of Est. Cost', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle', fill: '#6B7280', fontSize: 11 } }} />
                           <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
                           <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
                           {series.map(s => (
@@ -793,10 +793,10 @@ export default function AnalysisPage() {
                     <p className="text-xs text-gray-400 text-center py-8">No data for the selected filters</p>
                   ) : (
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={data} margin={{ top: 4, right: 4, left: -8, bottom: 30 }}>
+                      <BarChart data={data} margin={{ top: 4, right: 4, left: 12, bottom: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                         <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" interval={0} />
-                        <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} />
+                        <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} label={{ value: 'Sum of Est. Cost', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle', fill: '#6B7280', fontSize: 11 } }} />
                         <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
                         <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
                         {STATUSES.map(s => (

@@ -76,15 +76,23 @@ export async function POST(req: NextRequest) {
         updated_at: new Date().toISOString(),
       }
 
-      await db
+      const { error: vpdError } = await db
         .from('vendor_payment_details')
         .upsert(vendorPayload, { onConflict: 'ticket_id' })
+      if (vpdError) {
+        console.error('vendor_payment_details upsert failed:', vpdError, 'payload:', vendorPayload)
+        throw vpdError
+      }
 
       // Write total_repair_cost back to the new Repairs_Closeout row
-      await db
+      const { error: rcUpdateError } = await db
         .from('Repairs_Closeout')
         .update({ total_repair_cost: totalCost })
         .eq('id', repairData.id)
+      if (rcUpdateError) {
+        console.error('Repairs_Closeout total_repair_cost update failed:', rcUpdateError)
+        throw rcUpdateError
+      }
     }
 
     // Update ticket status based on final_status

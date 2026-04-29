@@ -300,7 +300,7 @@ export default function MaintenanceTicketPage() {
         ? new Date().toISOString()
         : repForm.date_completed || null
     try {
-      await fetch('/api/repairs', {
+      const res = await fetch('/api/repairs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -316,6 +316,11 @@ export default function MaintenanceTicketPage() {
           production_foreman: dispatch.production_foreman || null,
         }),
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        toast.error(`Failed to save: ${body.error || res.statusText}`, { duration: 8000 })
+        return
+      }
       const hdr = ((data?.ticket as Record<string, unknown>)?.Well || (data?.ticket as Record<string, unknown>)?.Facility || `Ticket #${id}`) as string
       const CLOSED_STATUSES = new Set(['Repaired - Returned to Service', 'No Action - Returned to Service', 'Decommissioned / Retired'])
       if (effectiveFinalStatus === 'Repaired - Awaiting Final Cost') {

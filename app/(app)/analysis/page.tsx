@@ -43,6 +43,15 @@ interface AggData {
   costTrend: { month: string; label: string; estCost: number; repairCost: number }[]
   agedTickets: { ticket_id: number; field: string; equipment: string; status: string; issue_date: string; days_open: number }[]
   workTypeBreakdown: { type: string; count: number }[]
+  costMatrix: {
+    month: string
+    asset: string
+    field: string
+    ticket_status: string
+    equipment_type: string
+    equipment: string
+    est_cost: number
+  }[]
 }
 
 interface TableRow {
@@ -115,6 +124,14 @@ export default function AnalysisPage() {
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // Slicer state for the Cost by Equipment chart (mirrors the pivot in Excel)
+  const [equipChartAsset, setEquipChartAsset] = useState('All')
+  const [equipChartField, setEquipChartField] = useState('All')
+  const [equipChartStatus, setEquipChartStatus] = useState('Closed')
+  const [equipChartCategory, setEquipChartCategory] = useState('All')
+  // Slicer state for the Cost by Ticket Status chart
+  const [statusChartAsset, setStatusChartAsset] = useState('All')
 
   // Date range filter
   const [datePreset, setDatePreset] = useState<'all' | 'week' | 'month' | 'lastmonth' | 'ytd' | 'custom'>('all')
@@ -607,6 +624,166 @@ export default function AnalysisPage() {
                 </ResponsiveContainer>
               </div>
             )}
+
+            {/* Cost by Equipment — slicer-driven (Asset / Field / Status / Equipment Category) */}
+            {aggData.costMatrix && aggData.costMatrix.length > 0 && (() => {
+              const matrix = aggData.costMatrix
+              const assetOpts = ['All', ...Array.from(new Set(matrix.map(r => r.asset).filter(Boolean))).sort()]
+              const fieldOpts = ['All', ...Array.from(new Set(matrix.filter(r => equipChartAsset === 'All' || r.asset === equipChartAsset).map(r => r.field).filter(Boolean))).sort()]
+              const statusOpts = ['All', ...STATUSES]
+              const categoryOpts = ['All', ...Array.from(new Set(matrix.map(r => r.equipment_type).filter(Boolean))).sort()]
+
+              const filtered = matrix.filter(r =>
+                (equipChartAsset === 'All' || r.asset === equipChartAsset) &&
+                (equipChartField === 'All' || r.field === equipChartField) &&
+                (equipChartStatus === 'All' || r.ticket_status === equipChartStatus) &&
+                (equipChartCategory === 'All' || r.equipment_type === equipChartCategory)
+              )
+
+              // Pivot: month → equipment → cost
+              const monthMap = new Map<string, Record<string, number>>()
+              const equipTotals = new Map<string, number>()
+              for (const r of filtered) {
+                const eq = r.equipment || 'Unknown'
+                const bucket = monthMap.get(r.month) || {}
+                bucket[eq] = (bucket[eq] || 0) + r.est_cost
+                monthMap.set(r.month, bucket)
+                equipTotals.set(eq, (equipTotals.get(eq) || 0) + r.est_cost)
+              }
+              // Top 8 equipment by total cost — keeps the chart legible when no
+              // category is picked. Series order follows total cost, descending.
+              const series = Array.from(equipTotals.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(([name], i) => ({ key: name, color: CHART_COLORS_LIST[i % CHART_COLORS_LIST.length] }))
+              const truncated = equipTotals.size > 8
+
+              const data = Array.from(monthMap.keys()).sort().map(month => {
+                const row: Record<string, string | number> = {
+                  month,
+                  label: new Date(month + '-02').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                }
+                for (const s of series) row[s.key] = Math.round(monthMap.get(month)?.[s.key] || 0)
+                return row
+              })
+
+              const Slicer = ({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) => (
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">{label}</span>
+                  <select
+                    className="text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#1B2E6B] truncate"
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                  >
+                    {options.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+              )
+
+              return (
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Cost by Equipment</h3>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+                    <Slicer label="Asset" value={equipChartAsset} options={assetOpts} onChange={v => { setEquipChartAsset(v); setEquipChartField('All') }} />
+                    <Slicer label="Field" value={equipChartField} options={fieldOpts} onChange={setEquipChartField} />
+                    <Slicer label="Ticket Status" value={equipChartStatus} options={statusOpts} onChange={setEquipChartStatus} />
+                    <Slicer label="Equipment Catg." value={equipChartCategory} options={categoryOpts} onChange={setEquipChartCategory} />
+                  </div>
+                  {data.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-8">No data for the selected filters</p>
+                  ) : (
+                    <>
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={data} margin={{ top: 4, right: 4, left: -8, bottom: 60 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" interval={0} />
+                          <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} />
+                          <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
+                          <Legend wrapperStyle={{ fontSize: 10, paddingTop: 55 }} />
+                          {series.map(s => (
+                            <Bar key={s.key} dataKey={s.key} name={s.key} fill={s.color} radius={[4, 4, 0, 0]} />
+                          ))}
+                        </BarChart>
+                      </ResponsiveContainer>
+                      {truncated && (
+                        <p className="text-[10px] text-gray-400 text-center mt-1">
+                          Showing top 8 equipment by cost. Pick an Equipment Catg. to narrow further.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Cost by Ticket Status — slicer-driven (Asset only) */}
+            {aggData.costMatrix && aggData.costMatrix.length > 0 && (() => {
+              const matrix = aggData.costMatrix
+              const assetOpts = ['All', ...Array.from(new Set(matrix.map(r => r.asset).filter(Boolean))).sort()]
+
+              const filtered = matrix.filter(r =>
+                statusChartAsset === 'All' || r.asset === statusChartAsset
+              )
+
+              // Pivot: month → status → cost
+              const monthMap = new Map<string, Record<string, number>>()
+              for (const r of filtered) {
+                const status = r.ticket_status || 'Open'
+                const bucket = monthMap.get(r.month) || {}
+                bucket[status] = (bucket[status] || 0) + r.est_cost
+                monthMap.set(r.month, bucket)
+              }
+              const STATUS_HEX: Record<string, string> = {
+                'Open': '#1B2E6B',
+                'In Progress': '#FBBF24',
+                'Backlogged': '#9CA3AF',
+                'Awaiting Cost': '#FB923C',
+                'Closed': '#10B981',
+              }
+
+              const data = Array.from(monthMap.keys()).sort().map(month => {
+                const row: Record<string, string | number> = {
+                  month,
+                  label: new Date(month + '-02').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                }
+                for (const s of STATUSES) row[s] = Math.round(monthMap.get(month)?.[s] || 0)
+                return row
+              })
+
+              return (
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Cost by Ticket Status</h3>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Asset</span>
+                      <select
+                        className="text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#1B2E6B] truncate"
+                        value={statusChartAsset}
+                        onChange={e => setStatusChartAsset(e.target.value)}
+                      >
+                        {assetOpts.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {data.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-8">No data for the selected filters</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={data} margin={{ top: 4, right: 4, left: -8, bottom: 60 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" interval={0} />
+                        <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} />
+                        <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
+                        <Legend wrapperStyle={{ fontSize: 10, paddingTop: 55 }} />
+                        {STATUSES.map(s => (
+                          <Bar key={s} dataKey={s} name={s} fill={STATUS_HEX[s]} radius={[4, 4, 0, 0]} />
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Ticket Breakdown by Field + Equipment */}
             {equipBreakdownData.length > 0 && (

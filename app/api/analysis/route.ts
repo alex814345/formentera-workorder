@@ -131,6 +131,7 @@ export async function GET(req: NextRequest) {
       asset: string
       field: string
       department: string
+      equipment_type: string | null
       equipment_name: string
       work_order_type: string | null
       ticket_status: string
@@ -144,7 +145,7 @@ export async function GET(req: NextRequest) {
     while (true) {
       let q = db
         .from('workorder_ticket_summary')
-        .select('ticket_id, asset, field, department, equipment_name, work_order_type, ticket_status, issue_date, repair_date_closed, Estimate_Cost, repair_cost')
+        .select('ticket_id, asset, field, department, equipment_type, equipment_name, work_order_type, ticket_status, issue_date, repair_date_closed, Estimate_Cost, repair_cost')
         .order('ticket_id', { ascending: true })
         .range(from, from + BATCH - 1)
       if (userAssets.length > 0) q = q.in('asset', userAssets)
@@ -301,8 +302,48 @@ export async function GET(req: NextRequest) {
       }))
       .filter(m => m.estCost > 0 || m.repairCost > 0)
 
+    // 10. Cost matrix — pre-aggregated rollup that powers the slicer-driven
+    // charts (Cost by Equipment / Cost by Ticket Status). One row per unique
+    // combination of (month, asset, field, ticket_status, equipment_type,
+    // equipment) keeps the payload compact while letting the client slice
+    // freely without a round trip.
+    type MatrixRow = {
+      month: string
+      asset: string
+      field: string
+      ticket_status: string
+      equipment_type: string
+      equipment: string
+      est_cost: number
+    }
+    const matrixMap = new Map<string, MatrixRow>()
+    for (const r of rows) {
+      const month = (r.issue_date || '').slice(0, 7)
+      if (!month) continue
+      const key = `${month}||${r.asset || ''}||${r.field || ''}||${r.ticket_status || ''}||${r.equipment_type || ''}||${r.equipment_name || ''}`
+      const existing = matrixMap.get(key)
+      const cost = r.Estimate_Cost || 0
+      if (existing) {
+        existing.est_cost += cost
+      } else {
+        matrixMap.set(key, {
+          month,
+          asset: r.asset || '',
+          field: r.field || '',
+          ticket_status: r.ticket_status || '',
+          equipment_type: r.equipment_type || '',
+          equipment: r.equipment_name || '',
+          est_cost: cost,
+        })
+      }
+    }
+    const costMatrix = Array.from(matrixMap.values()).map(m => ({
+      ...m,
+      est_cost: Math.round(m.est_cost),
+    }))
+
     return NextResponse.json(
-      { statusTables, fieldEquipChart, costByDept, backlogHealth, monthlyTrend, departments, topEquipment, costTrend, agedTickets, workTypeBreakdown },
+      { statusTables, fieldEquipChart, costByDept, backlogHealth, monthlyTrend, departments, topEquipment, costTrend, agedTickets, workTypeBreakdown, costMatrix },
       { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate', 'Pragma': 'no-cache' } }
     )
   } catch (err) {

@@ -297,7 +297,7 @@ function MaintenancePageContent() {
             >
               Previous
             </button>
-            <span className="text-xs text-gray-500">Page {page + 1} of {totalPages}</span>
+            <span className="text-xs text-gray-500">Page {page + 1} of {totalPages} · {totalCount.toLocaleString()} {totalCount === 1 ? 'ticket' : 'tickets'}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}

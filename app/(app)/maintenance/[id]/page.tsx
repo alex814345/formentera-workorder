@@ -345,7 +345,7 @@ export default function MaintenanceTicketPage() {
         <button onClick={() => router.back()} className="p-1 -ml-1">
           <ArrowLeft size={20} className="text-gray-700" />
         </button>
-        <h1 className="page-title">Maintenance Ticket</h1>
+        <h1 className="page-title">Maintenance Ticket #{id}</h1>
       </div>
 
       {/* Workflow tabs */}

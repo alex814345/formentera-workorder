@@ -1032,7 +1032,7 @@ export default function AnalysisPage() {
                             <th className="text-left px-3 py-2 font-medium text-gray-500 whitespace-nowrap">Field</th>
                             <th className="text-left px-3 py-2 font-medium text-gray-500 whitespace-nowrap">Department</th>
                             <th className="text-right px-3 py-2 font-medium text-gray-500 whitespace-nowrap">Count</th>
-                            {showAge && <th className="text-right px-3 py-2 font-medium text-gray-500 whitespace-nowrap">Avg. Age</th>}
+                            {showAge && <th className="text-right px-3 py-2 font-medium text-gray-500 whitespace-nowrap">Avg. Days Open</th>}
                             <th className="text-right px-3 py-2 font-medium text-gray-500 whitespace-nowrap">Est. Cost</th>
                             <th className="text-right px-3 py-2 font-medium text-gray-500 whitespace-nowrap">Repair Cost</th>
                             <th className="text-right px-3 py-2 font-medium text-gray-500 whitespace-nowrap">Savings</th>
@@ -1060,7 +1060,7 @@ export default function AnalysisPage() {
                               <td className="px-3 py-2 text-right font-semibold text-gray-800">{r.count}</td>
                               {showAge && (
                                 <td className={`px-3 py-2 text-right font-medium ${r.avgAge !== null ? ageClass(r.avgAge) : 'text-gray-400'}`}>
-                                  {r.avgAge !== null ? `${r.avgAge}d` : '—'}
+                                  {r.avgAge !== null ? `${r.avgAge} ${r.avgAge === 1 ? 'day' : 'days'}` : '—'}
                                 </td>
                               )}
                               <td className="px-3 py-2 text-right text-gray-700">{r.estCost > 0 ? fmt(r.estCost) : '—'}</td>
@@ -1075,7 +1075,7 @@ export default function AnalysisPage() {
                             <td className="px-3 py-2 text-right text-gray-800">{totalCount}</td>
                             {showAge && (
                               <td className={`px-3 py-2 text-right ${totalAvgAge !== null ? ageClass(totalAvgAge) : 'text-gray-500'}`}>
-                                {totalAvgAge !== null ? `${totalAvgAge}d` : '—'}
+                                {totalAvgAge !== null ? `${totalAvgAge} ${totalAvgAge === 1 ? 'day' : 'days'}` : '—'}
                               </td>
                             )}
                             <td className="px-3 py-2 text-right text-gray-800">{totalEst > 0 ? fmt(totalEst) : '—'}</td>

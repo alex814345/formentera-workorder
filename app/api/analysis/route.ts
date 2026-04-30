@@ -35,11 +35,9 @@ export async function GET(req: NextRequest) {
 
       if (userAssets.length > 0) query = query.in('asset', userAssets)
       if (search) {
-        for (const token of search.split(/\s+/).filter(t => t.length >= 2 && /[a-zA-Z0-9]/.test(t))) {
-          query = query.or(
-            `ticket_id::text.ilike.%${token}%,equipment_name.ilike.%${token}%,issue_description.ilike.%${token}%,field.ilike.%${token}%,well.ilike.%${token}%,facility.ilike.%${token}%,department.ilike.%${token}%`
-          )
-        }
+        query = query.or(
+          `ticket_id::text.ilike.%${search}%,equipment_name.ilike.%${search}%,issue_description.ilike.%${search}%,field.ilike.%${search}%,well.ilike.%${search}%,facility.ilike.%${search}%,department.ilike.%${search}%`
+        )
       }
       if (statusFilter && statusFilter !== 'All') query = query.eq('ticket_status', statusFilter)
       if (deptFilter && deptFilter !== 'All') query = query.eq('department', deptFilter)
@@ -90,11 +88,9 @@ export async function GET(req: NextRequest) {
           .range(from, from + BATCH - 1)
         if (userAssets.length > 0) q = q.in('asset', userAssets)
         if (search) {
-          for (const token of search.split(/\s+/).filter(t => t.length >= 2 && /[a-zA-Z0-9]/.test(t))) {
-            q = q.or(
-              `ticket_id::text.ilike.%${token}%,equipment_name.ilike.%${token}%,issue_description.ilike.%${token}%,field.ilike.%${token}%,well.ilike.%${token}%,facility.ilike.%${token}%,department.ilike.%${token}%`
-            )
-          }
+          q = q.or(
+            `ticket_id::text.ilike.%${search}%,equipment_name.ilike.%${search}%,issue_description.ilike.%${search}%,field.ilike.%${search}%,well.ilike.%${search}%,facility.ilike.%${search}%,department.ilike.%${search}%`
+          )
         }
         if (statusFilter && statusFilter !== 'All') q = q.eq('ticket_status', statusFilter)
         if (deptFilter && deptFilter !== 'All') q = q.eq('department', deptFilter)

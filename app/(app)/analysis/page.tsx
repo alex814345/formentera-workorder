@@ -242,6 +242,14 @@ export default function AnalysisPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages, chatLoading])
 
+  // Departments sorted by total ticket count, descending — used by heatmap filter
+  const departmentsByCount = useMemo(() => {
+    if (!aggData) return [] as string[]
+    const totals: Record<string, number> = {}
+    for (const r of aggData.fieldEquipChart) totals[r.dept] = (totals[r.dept] || 0) + r.count
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([d]) => d)
+  }, [aggData])
+
   // Pivot fieldEquipChart for stacked bar chart
   const { equipBreakdownData, topEquipTypes } = useMemo(() => {
     if (!aggData) return { equipBreakdownData: [], topEquipTypes: [] as string[] }
@@ -765,10 +773,13 @@ export default function AnalysisPage() {
               )
               return (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                  <h3 className="text-sm font-semibold text-gray-700">Tickets by Field & Equipment</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gray-700">Tickets by Field & Equipment</h3>
+                    <span className="text-[10px] text-gray-400">tap a cell to filter</span>
+                  </div>
                   <p className="text-xs text-gray-400 mb-3">Hotspots across fields and equipment — darker cells mean more tickets</p>
                   <div className="flex gap-1.5 flex-wrap mb-3">
-                    {['All', ...departments].map(d => (
+                    {['All', ...departmentsByCount].map(d => (
                       <button
                         key={d}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${deptFilter === d ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
@@ -808,12 +819,19 @@ export default function AnalysisPage() {
                               const intensity = count / maxCount
                               const opacity = count === 0 ? 0.04 : 0.15 + intensity * 0.85
                               const textWhite = intensity > 0.5
+                              const clickable = count > 0
                               return (
                                 <div
                                   key={eq}
-                                  className={`rounded-md text-xs font-semibold text-center py-2.5 cursor-default transition-transform hover:scale-[1.03] ${textWhite ? 'text-white' : 'text-gray-700'}`}
+                                  className={`rounded-md text-xs font-semibold text-center py-2.5 transition-transform ${textWhite ? 'text-white' : 'text-gray-700'} ${clickable ? 'cursor-pointer hover:scale-[1.04] active:scale-[0.99]' : 'cursor-default'}`}
                                   style={{ backgroundColor: `rgba(27, 46, 107, ${opacity})` }}
-                                  title={`${fieldName} • ${eq}: ${count} tickets`}
+                                  title={clickable ? `View ${count} ticket${count === 1 ? '' : 's'} for ${fieldName} • ${eq}` : `${fieldName} • ${eq}: 0 tickets`}
+                                  onClick={() => {
+                                    if (!clickable) return
+                                    setSearch(`${fieldName} ${eq}`)
+                                    if (deptFilter !== 'All') setTableDeptFilter(deptFilter)
+                                    setTab('tickets')
+                                  }}
                                 >
                                   {count || ''}
                                 </div>

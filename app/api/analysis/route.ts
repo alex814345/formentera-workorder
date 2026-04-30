@@ -47,8 +47,10 @@ export async function GET(req: NextRequest) {
         if (/^\d+$/.test(search)) orParts.push(`ticket_id.eq.${search}`)
         query = query.or(orParts.join(','))
       }
-      if (statusFilter && statusFilter !== 'All') query = query.eq('ticket_status', statusFilter)
-      if (deptFilter && deptFilter !== 'All') query = query.eq('department', deptFilter)
+      const statusList = statusFilter.split(',').map(s => s.trim()).filter(s => s && s !== 'All')
+      if (statusList.length > 0) query = query.in('ticket_status', statusList)
+      const deptList = deptFilter.split(',').map(s => s.trim()).filter(s => s && s !== 'All')
+      if (deptList.length > 0) query = query.in('department', deptList)
       if (equipmentFilter && equipmentFilter !== 'All') {
         if (equipmentFilter === 'Unknown') query = query.or('equipment_name.is.null,equipment_name.eq.')
         else query = query.eq('equipment_name', equipmentFilter)
@@ -107,8 +109,10 @@ export async function GET(req: NextRequest) {
           if (/^\d+$/.test(search)) orParts.push(`ticket_id.eq.${search}`)
           q = q.or(orParts.join(','))
         }
-        if (statusFilter && statusFilter !== 'All') q = q.eq('ticket_status', statusFilter)
-        if (deptFilter && deptFilter !== 'All') q = q.eq('department', deptFilter)
+        const statusList = statusFilter.split(',').map(s => s.trim()).filter(s => s && s !== 'All')
+        if (statusList.length > 0) q = q.in('ticket_status', statusList)
+        const deptList = deptFilter.split(',').map(s => s.trim()).filter(s => s && s !== 'All')
+        if (deptList.length > 0) q = q.in('department', deptList)
         if (equipmentFilter && equipmentFilter !== 'All') {
           if (equipmentFilter === 'Unknown') q = q.or('equipment_name.is.null,equipment_name.eq.')
           else q = q.eq('equipment_name', equipmentFilter)
@@ -192,8 +196,10 @@ export async function GET(req: NextRequest) {
           if (/^\d+$/.test(search)) orParts.push(`ticket_id.eq.${search}`)
           q = q.or(orParts.join(','))
         }
-        if (statusFilter && statusFilter !== 'All') q = q.eq('ticket_status', statusFilter)
-        if (deptFilter && deptFilter !== 'All') q = q.eq('department', deptFilter)
+        const statusList = statusFilter.split(',').map(s => s.trim()).filter(s => s && s !== 'All')
+        if (statusList.length > 0) q = q.in('ticket_status', statusList)
+        const deptList = deptFilter.split(',').map(s => s.trim()).filter(s => s && s !== 'All')
+        if (deptList.length > 0) q = q.in('department', deptList)
         if (equipmentFilter && equipmentFilter !== 'All') {
           if (equipmentFilter === 'Unknown') q = q.or('equipment_name.is.null,equipment_name.eq.')
           else q = q.eq('equipment_name', equipmentFilter)

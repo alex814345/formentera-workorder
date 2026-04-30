@@ -54,6 +54,7 @@ interface AggData {
   costByDept: { dept: string; estCost: number; repairCost: number }[]
   monthlyTrend: { month: string; label: string; count: number }[]
   departments: string[]
+  equipmentList: string[]
   topEquipment: { name: string; count: number }[]
   costTrend: { month: string; label: string; estCost: number; repairCost: number }[]
   workTypeBreakdown: { type: string; count: number }[]
@@ -129,6 +130,7 @@ export default function AnalysisPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [tableDeptFilter, setTableDeptFilter] = useState('All')
+  const [equipmentFilter, setEquipmentFilter] = useState('All')
   const [workTypeFilter, setWorkTypeFilter] = useState('All')
   const [tableLoading, setTableLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -213,7 +215,7 @@ export default function AnalysisPage() {
   useEffect(() => {
     setTablePage(0)
     setTableRows([])
-  }, [debouncedSearch, statusFilter, tableDeptFilter, workTypeFilter, effectiveStart, effectiveEnd])
+  }, [debouncedSearch, statusFilter, tableDeptFilter, equipmentFilter, workTypeFilter, effectiveStart, effectiveEnd])
 
   // Fetch ticket table
   useEffect(() => {
@@ -223,6 +225,7 @@ export default function AnalysisPage() {
     if (debouncedSearch) params.set('search', debouncedSearch)
     if (statusFilter !== 'All') params.set('status', statusFilter)
     if (tableDeptFilter !== 'All') params.set('department', tableDeptFilter)
+    if (equipmentFilter !== 'All') params.set('equipment', equipmentFilter)
     if (workTypeFilter && workTypeFilter !== 'All') params.set('workType', workTypeFilter)
     if (effectiveStart) params.set('startDate', effectiveStart)
     if (effectiveEnd) params.set('endDate', effectiveEnd)
@@ -235,7 +238,7 @@ export default function AnalysisPage() {
       })
       .catch(() => {})
       .finally(() => setTableLoading(false))
-  }, [tab, tablePage, debouncedSearch, statusFilter, tableDeptFilter, workTypeFilter, assets, loading, effectiveStart, effectiveEnd])
+  }, [tab, tablePage, debouncedSearch, statusFilter, tableDeptFilter, equipmentFilter, workTypeFilter, assets, loading, effectiveStart, effectiveEnd])
 
   // Auto-scroll chat to latest message
   useEffect(() => {
@@ -356,6 +359,7 @@ export default function AnalysisPage() {
     if (debouncedSearch) params.set('search', debouncedSearch)
     if (statusFilter !== 'All') params.set('status', statusFilter)
     if (tableDeptFilter !== 'All') params.set('department', tableDeptFilter)
+    if (equipmentFilter !== 'All') params.set('equipment', equipmentFilter)
     if (workTypeFilter && workTypeFilter !== 'All') params.set('workType', workTypeFilter)
     if (effectiveStart) params.set('startDate', effectiveStart)
     if (effectiveEnd) params.set('endDate', effectiveEnd)
@@ -828,7 +832,8 @@ export default function AnalysisPage() {
                                   title={clickable ? `View ${count} ticket${count === 1 ? '' : 's'} for ${fieldName} • ${eq}` : `${fieldName} • ${eq}: 0 tickets`}
                                   onClick={() => {
                                     if (!clickable) return
-                                    setSearch(`${fieldName} ${eq}`)
+                                    setSearch(fieldName)
+                                    setEquipmentFilter(eq)
                                     if (deptFilter !== 'All') setTableDeptFilter(deptFilter)
                                     setTab('tickets')
                                   }}
@@ -1074,6 +1079,23 @@ export default function AnalysisPage() {
                 </div>
               )}
 
+              {/* Equipment */}
+              {aggData?.equipmentList && aggData.equipmentList.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Equipment</p>
+                  <select
+                    className="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1B2E6B]/20 focus:border-[#1B2E6B] transition-colors"
+                    value={equipmentFilter}
+                    onChange={e => setEquipmentFilter(e.target.value)}
+                  >
+                    <option value="All">All Equipment</option>
+                    {aggData.equipmentList.map(eq => (
+                      <option key={eq} value={eq}>{eq}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Work Type */}
               <div>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Work Type</p>
@@ -1091,10 +1113,10 @@ export default function AnalysisPage() {
               </div>
 
               {/* Reset */}
-              {(search || statusFilter !== 'All' || tableDeptFilter !== 'All' || workTypeFilter !== 'All') && (
+              {(search || statusFilter !== 'All' || tableDeptFilter !== 'All' || equipmentFilter !== 'All' || workTypeFilter !== 'All') && (
                 <button
                   className="w-full py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
-                  onClick={() => { setSearch(''); setStatusFilter('All'); setTableDeptFilter('All'); setWorkTypeFilter('All') }}
+                  onClick={() => { setSearch(''); setStatusFilter('All'); setTableDeptFilter('All'); setEquipmentFilter('All'); setWorkTypeFilter('All') }}
                 >
                   ✕ Reset Filters
                 </button>

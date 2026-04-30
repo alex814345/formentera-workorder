@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
       const statusFilter = searchParams.get('status') || ''
       const deptFilter = searchParams.get('department') || ''
       const workTypeFilter = searchParams.get('workType') || ''
+      const equipmentFilter = searchParams.get('equipment') || ''
 
       let query = db
         .from('workorder_ticket_summary')
@@ -41,6 +42,7 @@ export async function GET(req: NextRequest) {
       }
       if (statusFilter && statusFilter !== 'All') query = query.eq('ticket_status', statusFilter)
       if (deptFilter && deptFilter !== 'All') query = query.eq('department', deptFilter)
+      if (equipmentFilter && equipmentFilter !== 'All') query = query.eq('equipment_name', equipmentFilter)
       if (workTypeFilter) {
         if (workTypeFilter === 'Unspecified') {
           query = query.is('work_order_type', null)
@@ -66,6 +68,7 @@ export async function GET(req: NextRequest) {
       const statusFilter = searchParams.get('status') || ''
       const deptFilter = searchParams.get('department') || ''
       const workTypeFilter = searchParams.get('workType') || ''
+      const equipmentFilter = searchParams.get('equipment') || ''
       const BATCH = 1000
       const exportRows: Record<string, unknown>[] = []
       let from = 0
@@ -86,6 +89,7 @@ export async function GET(req: NextRequest) {
         }
         if (statusFilter && statusFilter !== 'All') q = q.eq('ticket_status', statusFilter)
         if (deptFilter && deptFilter !== 'All') q = q.eq('department', deptFilter)
+        if (equipmentFilter && equipmentFilter !== 'All') q = q.eq('equipment_name', equipmentFilter)
         if (workTypeFilter) {
           if (workTypeFilter === 'Unspecified') {
             q = q.is('work_order_type', null)
@@ -313,7 +317,7 @@ export async function GET(req: NextRequest) {
     }))
 
     return NextResponse.json(
-      { statusTables, fieldEquipChart, costByDept, monthlyTrend, departments, topEquipment, costTrend, workTypeBreakdown, costMatrix },
+      { statusTables, fieldEquipChart, costByDept, monthlyTrend, departments, topEquipment, equipmentList: Array.from(equipCountMap.keys()).filter(Boolean).sort(), costTrend, workTypeBreakdown, costMatrix },
       { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate', 'Pragma': 'no-cache' } }
     )
   } catch (err) {

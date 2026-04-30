@@ -159,8 +159,8 @@ export default function AnalysisPage() {
   const [tablePage, setTablePage] = useState(0)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string[]>([])
-  const [tableDeptFilter, setTableDeptFilter] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [tableDeptFilter, setTableDeptFilter] = useState('All')
   const [equipmentFilter, setEquipmentFilter] = useState('All')
   const [fieldFilter, setFieldFilter] = useState('All')
   const [workTypeFilter, setWorkTypeFilter] = useState('All')
@@ -255,8 +255,8 @@ export default function AnalysisPage() {
     const params = new URLSearchParams({ mode: 'table', page: String(tablePage), pageSize: '25' })
     if (assets.length > 0) params.set('userAssets', assets.join(','))
     if (debouncedSearch) params.set('search', debouncedSearch)
-    if (statusFilter.length > 0) params.set('status', statusFilter.join(','))
-    if (tableDeptFilter.length > 0) params.set('department', tableDeptFilter.join(','))
+    if (statusFilter !== 'All') params.set('status', statusFilter)
+    if (tableDeptFilter !== 'All') params.set('department', tableDeptFilter)
     if (equipmentFilter !== 'All') params.set('equipment', equipmentFilter)
     if (fieldFilter !== 'All') params.set('field', fieldFilter)
     if (workTypeFilter && workTypeFilter !== 'All') params.set('workType', workTypeFilter)
@@ -390,8 +390,8 @@ export default function AnalysisPage() {
     const params = new URLSearchParams({ mode })
     if (assets.length > 0) params.set('userAssets', assets.join(','))
     if (debouncedSearch) params.set('search', debouncedSearch)
-    if (statusFilter.length > 0) params.set('status', statusFilter.join(','))
-    if (tableDeptFilter.length > 0) params.set('department', tableDeptFilter.join(','))
+    if (statusFilter !== 'All') params.set('status', statusFilter)
+    if (tableDeptFilter !== 'All') params.set('department', tableDeptFilter)
     if (equipmentFilter !== 'All') params.set('equipment', equipmentFilter)
     if (fieldFilter !== 'All') params.set('field', fieldFilter)
     if (workTypeFilter && workTypeFilter !== 'All') params.set('workType', workTypeFilter)
@@ -879,7 +879,7 @@ export default function AnalysisPage() {
                                     if (!clickable) return
                                     setFieldFilter(fieldName)
                                     setEquipmentFilter(eq)
-                                    if (deptFilter !== 'All') setTableDeptFilter([deptFilter])
+                                    if (deptFilter !== 'All') setTableDeptFilter(deptFilter)
                                     setTab('tickets')
                                   }}
                                 >
@@ -928,7 +928,7 @@ export default function AnalysisPage() {
                         <div
                           key={w.type}
                           className="flex items-center gap-3 -mx-1 px-1 py-1.5 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors active:scale-[0.99]"
-                          onClick={() => { setWorkTypeFilter(w.type === 'Unspecified' ? 'Unspecified' : w.type); setStatusFilter(['Closed']); setTab('tickets') }}
+                          onClick={() => { setWorkTypeFilter(w.type === 'Unspecified' ? 'Unspecified' : w.type); setStatusFilter('Closed'); setTab('tickets') }}
                         >
                           <span className="text-xs text-gray-600 w-28 shrink-0 truncate">{w.type}</span>
                           <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -1045,8 +1045,8 @@ export default function AnalysisPage() {
                               className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} cursor-pointer hover:bg-blue-50 transition-colors`}
                               title={`View ${r.count} ticket${r.count === 1 ? '' : 's'} in ${status}`}
                               onClick={() => {
-                                setStatusFilter([status])
-                                setTableDeptFilter(r.dept ? [r.dept] : [])
+                                setStatusFilter(status)
+                                setTableDeptFilter(r.dept || 'All')
                                 setFieldFilter(r.field || 'Unknown')
                                 setEquipmentFilter('All')
                                 setWorkTypeFilter('All')
@@ -1124,21 +1124,15 @@ export default function AnalysisPage() {
               <div>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Status</p>
                 <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-thin-pills">
-                  {['All', ...STATUSES].map(s => {
-                    const selected = s === 'All' ? statusFilter.length === 0 : statusFilter.includes(s)
-                    return (
-                      <button
-                        key={s}
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${selected ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        onClick={() => {
-                          if (s === 'All') setStatusFilter([])
-                          else setStatusFilter(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
-                        }}
-                      >
-                        {s}
-                      </button>
-                    )
-                  })}
+                  {['All', ...STATUSES].map(s => (
+                    <button
+                      key={s}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${statusFilter === s ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      onClick={() => setStatusFilter(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -1147,21 +1141,15 @@ export default function AnalysisPage() {
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Department</p>
                   <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-thin-pills">
-                    {['All', ...departments].map(d => {
-                      const selected = d === 'All' ? tableDeptFilter.length === 0 : tableDeptFilter.includes(d)
-                      return (
-                        <button
-                          key={d}
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${selected ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                          onClick={() => {
-                            if (d === 'All') setTableDeptFilter([])
-                            else setTableDeptFilter(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
-                          }}
-                        >
-                          {d}
-                        </button>
-                      )
-                    })}
+                    {['All', ...departments].map(d => (
+                      <button
+                        key={d}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${tableDeptFilter === d ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        onClick={() => setTableDeptFilter(d)}
+                      >
+                        {d}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1192,7 +1180,7 @@ export default function AnalysisPage() {
                     <button
                       key={w}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${workTypeFilter === w ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                      onClick={() => { setWorkTypeFilter(w); if (w !== 'All') setStatusFilter(['Closed']) }}
+                      onClick={() => { setWorkTypeFilter(w); if (w !== 'All') setStatusFilter('Closed') }}
                     >
                       {w}
                     </button>
@@ -1214,10 +1202,10 @@ export default function AnalysisPage() {
               )}
 
               {/* Reset */}
-              {(search || statusFilter.length > 0 || tableDeptFilter.length > 0 || fieldFilter !== 'All' || equipmentFilter !== 'All' || workTypeFilter !== 'All') && (
+              {(search || statusFilter !== 'All' || tableDeptFilter !== 'All' || fieldFilter !== 'All' || equipmentFilter !== 'All' || workTypeFilter !== 'All') && (
                 <button
                   className="w-full py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
-                  onClick={() => { setSearch(''); setStatusFilter([]); setTableDeptFilter([]); setFieldFilter('All'); setEquipmentFilter('All'); setWorkTypeFilter('All') }}
+                  onClick={() => { setSearch(''); setStatusFilter('All'); setTableDeptFilter('All'); setFieldFilter('All'); setEquipmentFilter('All'); setWorkTypeFilter('All') }}
                 >
                   ✕ Reset Filters
                 </button>

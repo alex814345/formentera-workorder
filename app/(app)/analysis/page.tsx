@@ -555,13 +555,13 @@ export default function AnalysisPage() {
                     <p className="text-xs text-gray-400 text-center py-8">No data for the selected filters</p>
                   ) : (
                     <>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={data} margin={{ top: 4, right: 4, left: 12, bottom: 30 }}>
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={data} margin={{ top: 4, right: 4, left: 12, bottom: 50 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                           <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" interval={0} />
                           <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} ticks={equipTicks} domain={[0, equipTicks[equipTicks.length - 1]]} label={{ value: 'Sum of Est. Cost', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle', fill: '#6B7280', fontSize: 11 } }} />
                           <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
-                          <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+                          <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10, paddingTop: 32 }} />
                           {series.map(s => (
                             <Bar key={s.key} dataKey={s.key} name={s.key} fill={s.color} radius={[4, 4, 0, 0]} />
                           ))}
@@ -645,13 +645,13 @@ export default function AnalysisPage() {
                   {data.length === 0 ? (
                     <p className="text-xs text-gray-400 text-center py-8">No data for the selected filters</p>
                   ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={data} margin={{ top: 4, right: 4, left: 12, bottom: 30 }}>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart data={data} margin={{ top: 4, right: 4, left: 12, bottom: 50 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                         <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" interval={0} />
                         <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmt} ticks={statusTicks} domain={[0, statusTicks[statusTicks.length - 1]]} label={{ value: 'Sum of Est. Cost', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle', fill: '#6B7280', fontSize: 11 } }} />
                         <Tooltip formatter={(v: unknown) => [fmt(v as number), '']} />
-                        <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+                        <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10, paddingTop: 32 }} />
                         {STATUSES.map(s => (
                           <Bar key={s} dataKey={s} name={s} fill={STATUS_HEX[s]} radius={[4, 4, 0, 0]} />
                         ))}
@@ -757,43 +757,84 @@ export default function AnalysisPage() {
               </div>
             )}
 
-            {/* Ticket Breakdown by Field + Equipment */}
-            {equipBreakdownData.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Tickets by Field & Equipment</h3>
-                <div className="flex gap-1.5 flex-wrap mb-3">
-                  {['All', ...departments].map(d => (
-                    <button
-                      key={d}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${deptFilter === d ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                      onClick={() => setDeptFilter(d)}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={equipBreakdownData} margin={{ top: 4, right: 4, left: -24, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                    <XAxis
-                      dataKey="field"
-                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                      axisLine={false}
-                      tickLine={false}
-                      angle={-45}
-                      textAnchor="end"
-                      interval={0}
-                    />
-                    <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip cursor={{ fill: '#F3F4F6' }} wrapperStyle={{ transform: 'translateY(-80px)' }} />
-                    <Legend wrapperStyle={{ fontSize: 10, paddingTop: 24 }} />
-                    {topEquipTypes.map((equip, i) => (
-                      <Bar key={equip} dataKey={equip} stackId="a" fill={CHART_COLORS[i % CHART_COLORS.length]} />
+            {/* Ticket Breakdown by Field + Equipment — heatmap */}
+            {equipBreakdownData.length > 0 && (() => {
+              const maxCount = Math.max(
+                1,
+                ...equipBreakdownData.flatMap(row => topEquipTypes.map(eq => (row as Record<string, unknown>)[eq] as number || 0))
+              )
+              return (
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                  <h3 className="text-sm font-semibold text-gray-700">Tickets by Field & Equipment</h3>
+                  <p className="text-xs text-gray-400 mb-3">Hotspots across fields and equipment — darker cells mean more tickets</p>
+                  <div className="flex gap-1.5 flex-wrap mb-3">
+                    {['All', ...departments].map(d => (
+                      <button
+                        key={d}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${deptFilter === d ? 'bg-[#1B2E6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        onClick={() => setDeptFilter(d)}
+                      >
+                        {d}
+                      </button>
                     ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[560px]">
+                      <div
+                        className="grid gap-1 mb-1"
+                        style={{ gridTemplateColumns: `110px repeat(${topEquipTypes.length}, minmax(0, 1fr))` }}
+                      >
+                        <div></div>
+                        {topEquipTypes.map(eq => (
+                          <div key={eq} className="text-[10px] text-gray-500 text-center px-1 leading-tight" title={eq}>
+                            {eq}
+                          </div>
+                        ))}
+                      </div>
+                      {equipBreakdownData.map(row => {
+                        const r = row as Record<string, unknown>
+                        const fieldName = r.field as string
+                        return (
+                          <div
+                            key={fieldName}
+                            className="grid gap-1 mb-1"
+                            style={{ gridTemplateColumns: `110px repeat(${topEquipTypes.length}, minmax(0, 1fr))` }}
+                          >
+                            <div className="text-xs text-gray-700 truncate self-center pr-2" title={fieldName}>
+                              {fieldName}
+                            </div>
+                            {topEquipTypes.map(eq => {
+                              const count = (r[eq] as number) || 0
+                              const intensity = count / maxCount
+                              const opacity = count === 0 ? 0.04 : 0.15 + intensity * 0.85
+                              const textWhite = intensity > 0.5
+                              return (
+                                <div
+                                  key={eq}
+                                  className={`rounded-md text-xs font-semibold text-center py-2.5 cursor-default transition-transform hover:scale-[1.03] ${textWhite ? 'text-white' : 'text-gray-700'}`}
+                                  style={{ backgroundColor: `rgba(27, 46, 107, ${opacity})` }}
+                                  title={`${fieldName} • ${eq}: ${count} tickets`}
+                                >
+                                  {count || ''}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })}
+                      {/* Color scale legend */}
+                      <div className="flex items-center justify-end gap-1.5 mt-3">
+                        <span className="text-[10px] text-gray-400">Fewer</span>
+                        {[0.15, 0.3, 0.5, 0.7, 0.9, 1].map(o => (
+                          <div key={o} className="w-4 h-3 rounded-sm" style={{ backgroundColor: `rgba(27, 46, 107, ${o})` }} />
+                        ))}
+                        <span className="text-[10px] text-gray-400">More</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Work Type Breakdown */}
             {aggData.workTypeBreakdown && aggData.workTypeBreakdown.length > 0 && (() => {

@@ -137,9 +137,10 @@ export async function GET(req: NextRequest) {
         return s.includes(',') || s.includes('"') || s.includes('\n')
           ? `"${s.replace(/"/g, '""')}"` : s
       }
+      const stripEmoji = (v: unknown) => String(v ?? '').replace(/^[^a-zA-Z0-9]+/, '').trim()
       const csvRows = exportRows.map(r =>
         [
-          r.ticket_id, escape(r.asset), escape(r.field), escape(r.department),
+          r.ticket_id, escape(r.asset), escape(r.field), escape(stripEmoji(r.department)),
           escape(r.work_order_type), escape(r.location_type), escape(r.well),
           escape(r.facility), escape(r.equipment_name), escape(r.issue_description),
           escape(r.ticket_status), r.issue_date, r.repair_date_closed,
@@ -147,7 +148,7 @@ export async function GET(req: NextRequest) {
         ].join(',')
       )
       const header = 'Ticket ID,Asset,Field,Department,Work Order Type,Location Type,Well,Facility,Equipment,Description,Status,Submitted,Closed,Est. Cost,Repair Cost'
-      const csv = [header, ...csvRows].join('\n')
+      const csv = '﻿' + [header, ...csvRows].join('\n')
       const filename = `tickets-${new Date().toISOString().slice(0, 10)}.csv`
       return new Response(csv, {
         headers: {

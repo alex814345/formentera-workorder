@@ -47,13 +47,13 @@ export default function RepairImagesPage() {
                 minScale={1}
                 maxScale={5}
                 doubleClick={{ mode: 'toggle', step: 2 }}
-                wheel={{ step: 0.2 }}
+                wheel={{ step: 0.2, activationKeys: ['Control', 'Meta'] }}
               >
                 {({ zoomIn, zoomOut, resetTransform }) => (
                   <div className="relative bg-gray-100 rounded-xl overflow-hidden">
                     <TransformComponent wrapperClass="!w-full" contentClass="!w-full">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt={`Repair photo ${i + 1}`} className="w-full object-contain select-none" draggable={false} />
+                      <img src={url} alt={`Repair photo ${i + 1}`} className="w-full max-h-[70vh] object-contain select-none" draggable={false} />
                     </TransformComponent>
                     <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full p-1">
                       <button

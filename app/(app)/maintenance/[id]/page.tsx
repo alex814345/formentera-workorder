@@ -525,7 +525,7 @@ export default function MaintenanceTicketPage() {
                   ['Final Status', repairs.final_status],
                   ['Start Date', formatDateShort(repairs.start_date as string)],
                   ['Work Order Type', repairs.Work_Order_Type],
-                  ...(String(repairs.Work_Order_Type || '').startsWith('AFE')
+                  ...(String(repairs.Work_Order_Type || '').startsWith('AFE') || repairs.AFE_Number || repairs.Job_Category || repairs.Job_Type_Primary
                     ? [
                         ['AFE Number', repairs.AFE_Number] as [string, unknown],
                         ['Job Category', repairs.Job_Category] as [string, unknown],

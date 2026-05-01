@@ -208,6 +208,21 @@ function MaintenancePageContent() {
                 <button className="btn-primary" onClick={() => { resetFilters(); setFiltersOpen(false) }}>Reset Filters</button>
 
                 <div>
+                  <label className="form-label">Ticket Status</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {(['All', ...TICKET_STATUSES] as (TicketStatus | 'All')[]).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setStatusFilter(s)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${statusFilter === s ? 'bg-[#1B2E6B] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:shadow-sm hover:scale-105'}`}
+                      >
+                        {s}{s !== 'All' ? ` ${STATUS_EMOJI[s] ?? '⚪'}` : ''}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <p className="text-sm font-semibold text-gray-700 mb-2">Date Range</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -234,21 +249,6 @@ function MaintenancePageContent() {
                 <SearchableSelectFilter label="Equipment" value={equipFilter} onChange={setEquipFilter} options={equipments} />
                 <SearchableSelectFilter label="Assigned Foreman" value={foremanFilter} onChange={setForemanFilter} options={foremans} />
                 <SearchableSelectFilter label="Submitted By" value={submittedByFilter} onChange={setSubmittedByFilter} options={submitters} />
-
-                <div>
-                  <label className="form-label">Ticket Status</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {(['All', ...TICKET_STATUSES] as (TicketStatus | 'All')[]).map(s => (
-                      <button
-                        key={s}
-                        onClick={() => setStatusFilter(s)}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${statusFilter === s ? 'bg-[#1B2E6B] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:shadow-sm hover:scale-105'}`}
-                      >
-                        {s}{s !== 'All' ? ` ${STATUS_EMOJI[s] ?? '⚪'}` : ''}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </>
